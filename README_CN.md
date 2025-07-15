@@ -46,7 +46,7 @@
 ```bash
 # 克隆仓库
 git clone https://gitlab.com/jason853/anki-automation.git
-cd anki-vocab-automation
+cd anki-automation
 
 # 运行设置脚本创建虚拟环境并安装依赖
 python setup.py

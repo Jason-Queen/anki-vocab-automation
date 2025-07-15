@@ -46,7 +46,7 @@ I wanted to efficiently collect my personal vocabulary while reading English con
 ```bash
 # Clone the repository
 git clone https://gitlab.com/jason853/anki-automation.git
-cd anki-vocab-automation
+cd anki-automation
 
 # Run setup script to create virtual environment and install dependencies
 python setup.py
