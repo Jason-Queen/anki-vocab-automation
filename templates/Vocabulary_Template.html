@@ -1,0 +1,208 @@
+<!-- Anki Card Template: Vocabulary Learning with Dual Pronunciation -->
+
+<!-- ========= Front Template ========= -->
+<div class="card">
+    <div class="word">{{Word}}</div>
+    <div class="example">
+      <span class="label label-example">Example:</span><br>
+      {{Example}}
+    </div>
+  </div>
+
+<!-- ========= Back Template ========= -->
+<div class="card">
+    {{FrontSide}}
+    <hr class="divider">
+    <div class="part-of-speech-back">
+      <span class="pos-tag">{{PartOfSpeech}}</span>
+    </div>
+    <div class="definition">
+      <span class="label label-definition">Definition:</span><br>
+      {{Definition}}
+    </div>
+    
+    <!-- 双重发音部分 -->
+    <div class="pronunciation-section">
+      <span class="label label-pronunciation">Pronunciation:</span><br>
+      
+      <!-- 英式发音 -->
+      <div class="pronunciation-item">
+        <div class="pronunciation-header">
+          <span class="flag-icon">🇬🇧</span>
+          <span class="pronunciation-label">British:</span>
+          <span class="pronunciation-text">{{BritishPronunciation}}</span>
+        </div>
+        {{#BritishAudioFilename}}
+        <audio controls class="pronunciation-audio">
+          <source src="{{BritishAudioFilename}}" type="audio/mpeg">
+          Your browser does not support the audio element.
+        </audio>
+        {{/BritishAudioFilename}}
+      </div>
+      
+      <!-- 美式发音（只在有美式发音时显示） -->
+      {{#AmericanPronunciation}}
+      <div class="pronunciation-item">
+        <div class="pronunciation-header">
+          <span class="flag-icon">🇺🇸</span>
+          <span class="pronunciation-label">American:</span>
+          <span class="pronunciation-text">{{AmericanPronunciation}}</span>
+        </div>
+        {{#AmericanAudioFilename}}
+        <audio controls class="pronunciation-audio">
+          <source src="{{AmericanAudioFilename}}" type="audio/mpeg">
+        Your browser does not support the audio element.
+      </audio>
+        {{/AmericanAudioFilename}}
+    </div>
+      {{/AmericanPronunciation}}
+    </div>
+  </div>
+
+<!-- ========= Styling (Paste in Styling block) ========= -->
+<style>
+    /* Color variables */
+    :root {
+      --color-word: #2b6cb0;
+      --color-example: #805ad5;
+      --color-definition: #38a169;
+      --color-pronunciation: #dd6b20;
+      --color-pos: #d53f8c;
+      --divider-color: #a0aec0;
+      --background-light: #f7fafc;
+      --background-dark: #2d3748;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-word: #63b3ed;
+        --color-example: #9f7aea;
+        --color-definition: #48bb78;
+        --color-pronunciation: #f6ad55;
+        --color-pos: #ed64a6;
+        --divider-color: #718096;
+        --background-light: #4a5568;
+        --background-dark: #1a202c;
+      }
+    }
+    
+    .card {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+    .card > * {
+      margin: 0.5em 0;
+    }
+    .word {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: var(--color-word);
+    }
+    .label {
+      font-weight: 600;
+    }
+    .label-example { color: var(--color-example); }
+    .label-definition { color: var(--color-definition); }
+    .label-pronunciation { color: var(--color-pronunciation); }
+    .label-pos { color: var(--color-pos); }
+    .pos-value { 
+      color: var(--color-pos); 
+      font-weight: 500; 
+      margin-left: 0.5em;
+    }
+    .part-of-speech {
+      margin: 0.5em 0;
+      padding: 0.3em 0;
+    }
+    .part-of-speech-back {
+      margin: 0.5em 0;
+      text-align: left;
+    }
+    .pos-tag {
+      display: inline-block;
+      background-color: var(--color-pos);
+      color: white;
+      padding: 0.2em 0.5em;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 500;
+      margin: 0;
+      vertical-align: top;
+    }
+    .divider {
+      border: 0;
+      height: 1px;
+      background-color: var(--divider-color);
+      margin: 0.75em 0;
+    }
+    
+    /* 双重发音样式 */
+    .pronunciation-section {
+      background-color: var(--background-light);
+      padding: 1em;
+      border-radius: 8px;
+      margin: 1em 0;
+    }
+    
+    .pronunciation-item {
+      margin: 0.5em 0;
+      padding: 0.5em;
+      border-left: 3px solid var(--color-pronunciation);
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .pronunciation-item {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+    
+    .pronunciation-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      margin-bottom: 0.5em;
+    }
+    
+    .flag-icon {
+      font-size: 1.2em;
+    }
+    
+    .pronunciation-label {
+      font-weight: 600;
+      color: var(--color-pronunciation);
+      min-width: 80px;
+    }
+    
+    .pronunciation-text {
+      font-family: 'Courier New', monospace;
+      font-size: 1.1em;
+      color: var(--color-pronunciation);
+      font-weight: 500;
+    }
+    
+    .pronunciation-audio {
+      width: 100%;
+      max-width: 300px;
+      height: 32px;
+      margin-top: 0.25em;
+    }
+    
+    /* 移动设备优化 */
+    @media (max-width: 480px) {
+      .pronunciation-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25em;
+      }
+      
+      .pronunciation-text {
+        font-size: 1em;
+      }
+      
+      .pronunciation-audio {
+      width: 100%;
+        max-width: none;
+      }
+    }
+    </style>
