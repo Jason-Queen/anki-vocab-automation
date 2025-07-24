@@ -146,6 +146,11 @@ RETRY_ATTEMPTS=2           # Failure retry attempts
 TIMEOUT_PER_WORD=60        # Word processing timeout
 ```
 
+**⚠️ Important Notice: Concurrent processing may cause TTS file download failures**
+- When concurrent speed is too fast, TTS services may not respond in time, causing audio file download failures
+- If you encounter TTS download issues, it's recommended to use single-threaded mode (option 1) for stability
+- Single-threaded mode is slower but ensures all audio files are downloaded correctly
+
 ### Supported AI Services
 
 #### Cloud Services
@@ -233,6 +238,7 @@ Part of Speech: adjective
    - Reduce MAX_WORKERS value (recommended 2-4)
    - Increase RATE_LIMIT_PER_SECOND interval
    - Check network stability and API limits
+   - **TTS Download Failures:** If you encounter audio file download failures, it's recommended to switch to single-threaded mode (option 1)
 
 4. **Template Creation Failed**
    - If template exists but fields are incomplete, manually delete the template in Anki
@@ -256,6 +262,7 @@ Part of Speech: adjective
 - **Medium Vocabulary (50-200 words):** Enable concurrent processing, set max_workers=4
 - **Large Vocabulary (>200 words):** Use concurrent processing, adjust rate limits appropriately
 - **Local LLM:** Can increase concurrency and lower rate limits
+- **⚠️ TTS Stability Priority:** If audio file download failures occur, it's recommended to use single-threaded mode to ensure all audio is downloaded correctly
 
 ---
 
