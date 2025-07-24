@@ -450,27 +450,28 @@ def display_menu():
     print("=" * 50)
     
     print("\n可用选项:")
-    print("1. 运行自动化脚本")
-    print("2. 测试第一个单词")
-    print("3. 配置Collins API")
-    print("4. 配置LLM服务")
-    print("5. 设置数据源优先级")
-    print("6. 查看当前配置")
-    print("7. 创建配置文件")
-    print("8. 检查Anki环境")
-    print("9. 运行完整测试")
-    print("10. 查看帮助")
-    print("11. 退出")
+    print("1. 运行自动化脚本（单线程）")
+    print("2. 运行并发处理（推荐用于大词汇表）")
+    print("3. 测试第一个单词")
+    print("4. 配置Collins API")
+    print("5. 配置LLM服务")
+    print("6. 设置数据源优先级")
+    print("7. 查看当前配置")
+    print("8. 创建配置文件")
+    print("9. 检查Anki环境")
+    print("10. 运行完整测试")
+    print("11. 查看帮助")
+    print("12. 退出")
 
 def main():
     """主函数"""
     display_menu()
     
     while True:
-        choice = input("\n请选择 (1-11): ").strip()
+        choice = input("\n请选择 (1-12): ").strip()
         
         if choice == '1':
-            print("\n启动自动化脚本...")
+            print("\n启动自动化脚本（单线程）...")
             if not validate_current_config():
                 print("配置验证失败，请先修复配置问题")
                 display_menu()
@@ -495,6 +496,62 @@ def main():
             break
             
         elif choice == '2':
+            print("\n启动并发处理...")
+            if not validate_current_config():
+                print("配置验证失败，请先修复配置问题")
+                display_menu()
+                continue
+            
+            # 在运行前先检查Anki环境
+            if not check_anki_environment():
+                print("❌ Anki环境检查失败，请先解决问题再运行")
+                display_menu()
+                continue
+            
+            # 获取并发参数
+            try:
+                max_workers = input("请输入最大并发线程数 (默认4): ").strip()
+                max_workers = int(max_workers) if max_workers else 4
+                max_workers = max(1, min(max_workers, 8))  # 限制在1-8之间
+                
+                rate_limit = input("请输入速率限制 (每秒请求数，默认2.0): ").strip()
+                rate_limit = float(rate_limit) if rate_limit else 2.0
+                rate_limit = max(0.1, min(rate_limit, 10.0))  # 限制在0.1-10之间
+                
+                print(f"并发配置: 最大线程数={max_workers}, 速率限制={rate_limit}/s")
+                
+            except ValueError:
+                print("❌ 输入格式错误，使用默认配置: 线程数=4, 速率=2.0/s")
+                max_workers = 4
+                rate_limit = 2.0
+                
+            try:
+                from anki_vocab_automation.main import VocabularyAutomation, read_word_list
+                
+                # 读取单词列表
+                word_list = read_word_list()
+                if not word_list:
+                    print("❌ 无法读取单词列表或列表为空")
+                    print("请检查 data/New_Words.txt 文件")
+                    display_menu()
+                    continue
+                
+                # 创建自动化实例
+                automation = VocabularyAutomation()
+                
+                # 使用并发处理
+                automation.process_word_list_concurrent(word_list, max_workers, rate_limit)
+                
+            except ImportError as e:
+                print(f"导入失败: {e}")
+                print("请确保已安装依赖: pip install -r requirements.txt")
+            except Exception as e:
+                print(f"运行失败: {e}")
+                import traceback
+                traceback.print_exc()
+            break
+            
+        elif choice == '3':
             print("\n测试第一个单词...")
             if not validate_current_config():
                 print("配置验证失败，请先修复配置问题")
@@ -550,43 +607,43 @@ def main():
             display_menu()
             continue
             
-        elif choice == '3':
+        elif choice == '4':
             print("\n配置Collins API")
             configure_collins_api()
             display_menu()
             continue
             
-        elif choice == '4':
+        elif choice == '5':
             print("\n配置LLM服务")
             configure_llm_service()
             display_menu()
             continue
             
-        elif choice == '5':
+        elif choice == '6':
             print("\n设置数据源优先级")
             set_data_source_strategy()
             display_menu()
             continue
             
-        elif choice == '6':
+        elif choice == '7':
             print("\n查看当前配置")
             display_current_config()
             display_menu()
             continue
             
-        elif choice == '7':
+        elif choice == '8':
             print("\n创建配置文件")
             create_config_file()
             display_menu()
             continue
             
-        elif choice == '8':
+        elif choice == '9':
             print("\n检查Anki环境")
             check_anki_environment()
             display_menu()
             continue
             
-        elif choice == '9':
+        elif choice == '10':
             print("\n启动完整测试...")
             try:
                 from tests.test_automation import main as test_main
@@ -600,29 +657,39 @@ def main():
             display_menu()
             continue
             
-        elif choice == '10':
+        elif choice == '11':
             print("\n使用帮助:")
             print("=" * 50)
             print("1. 首次使用：")
-            print("   - 选择'7'创建配置文件")
-            print("   - 选择'8'检查Anki环境")
-            print("   - 选择'3'配置Collins API (可选)")
-            print("   - 选择'4'配置LLM服务 (推荐)")
-            print("   - 选择'5'设置数据源优先级")
-            print("   - 选择'6'查看当前配置")
+            print("   - 选择'8'创建配置文件")
+            print("   - 选择'9'检查Anki环境")
+            print("   - 选择'4'配置Collins API (可选)")
+            print("   - 选择'5'配置LLM服务 (推荐)")
+            print("   - 选择'6'设置数据源优先级")
+            print("   - 选择'7'查看当前配置")
             print()
-            print("2. 数据源策略说明：")
+            print("2. 处理模式选择：")
+            print("   - 选择'1': 单线程处理（适合小词汇表，<50词）")
+            print("   - 选择'2': 并发处理（推荐用于大词汇表，50+词）")
+            print()
+            print("3. 数据源策略说明：")
             print("   - collins_only: 仅使用Collins API")
             print("   - llm_only: 仅使用LLM")
             print("   - collins_first: 优先Collins API，失败时使用LLM")
             print("   - llm_first: 优先LLM，失败时使用Collins API")
             print()
-            print("3. TTS音频生成：")
+            print("4. 并发处理配置：")
+            print("   - 最大线程数: 建议2-4，取决于网络和API限制")
+            print("   - 速率限制: 每秒请求数，避免触发API限制")
+            print("   - 小词汇表: 线程数=2, 速率=1.0/s")
+            print("   - 大词汇表: 线程数=4, 速率=2.0/s")
+            print()
+            print("5. TTS音频生成：")
             print("   - 当使用LLM生成卡片时，自动使用TTS生成发音音频")
             print("   - 支持Google TTS、Microsoft TTS等多种服务")
             print("   - 在config.env中配置ENABLE_TTS_FALLBACK=true启用")
             print()
-            print("4. 环境变量配置：")
+            print("6. 环境变量配置：")
             print("   - COLLINS_API_KEY: Collins API密钥")
             print("   - LLM_BASE_URL: LLM服务地址")
             print("   - LLM_API_KEY: LLM API密钥")
@@ -630,30 +697,31 @@ def main():
             print("   - DATA_SOURCE_STRATEGY: 数据源策略")
             print("   - ENABLE_TTS_FALLBACK: 是否启用TTS音频")
             print()
-            print("5. 支持的LLM服务：")
+            print("7. 支持的LLM服务：")
             print("   - OpenAI: https://api.openai.com/v1")
             print("   - Anthropic Claude: https://api.anthropic.com/v1")
             print("   - LM Studio: http://localhost:1234/v1")
             print("   - Ollama: http://localhost:11434/v1")
-            print("   💡 建议：使用'4'选项进行图形化配置")
+            print("   💡 建议：使用'5'选项进行图形化配置")
             print()
-            print("6. 常见问题：")
+            print("8. 常见问题：")
             print("   - 确保Anki正在运行并安装了AnkiConnect插件")
             print("   - 确保data/New_Words.txt中有要处理的单词")
-            print("   - 使用'8'选项自动检查和创建Anki环境")
+            print("   - 使用'9'选项自动检查和创建Anki环境")
             print("   - 检查网络连接和API密钥")
+            print("   - 并发处理出错时可降低线程数和速率限制")
             print()
             print("详细说明请查看README.md文件")
             
             display_menu()
             continue
             
-        elif choice == '11':
+        elif choice == '12':
             print("\n再见！")
             break
             
         else:
-            print("❌ 无效选择，请输入1-11")
+            print("❌ 无效选择，请输入1-12")
             display_menu()
             continue
 

@@ -1,4 +1,0 @@
-DATA_SOURCE_STRATEGY=llm_only
-LLM_BASE_URL=http://localhost:1234
-LLM_MODEL_NAME=local-model
-LLM_API_KEY=not-needed

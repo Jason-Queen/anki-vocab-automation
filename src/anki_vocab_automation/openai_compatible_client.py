@@ -12,6 +12,8 @@ from dataclasses import dataclass
 
 from .models import VocabularyCard
 from .tts_generator import TTSGenerator
+from .input_validator import validate_word_input, sanitize_word_input
+from .secure_logger import sanitize_for_log
 
 logger = logging.getLogger(__name__)
 
@@ -182,6 +184,15 @@ class OpenAICompatibleClient:
         Returns:
             VocabularyCard对象，如果失败则返回None
         """
+        # 输入验证
+        is_valid, error_msg = validate_word_input(word)
+        if not is_valid:
+            logger.warning(f"无效的单词输入: {error_msg} - {word}")
+            return None
+        
+        # 清理输入
+        word = sanitize_word_input(word)
+        
         if not word.strip():
             logger.warning("搜索词为空")
             return None
@@ -199,8 +210,23 @@ class OpenAICompatibleClient:
             if response:
                 return self._parse_llm_response(response, word)
             return None
-        except Exception as e:
-            logger.error(f"LLM生成失败: {str(e)}")
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"LLM连接失败: {str(e)}")
+            return None
+        except requests.exceptions.Timeout as e:
+            logger.error(f"LLM请求超时: {str(e)}")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"LLM请求异常: {str(e)}")
+            return None
+        except json.JSONDecodeError as e:
+            logger.error(f"LLM响应JSON解析失败: {str(e)}")
+            return None
+        except ValueError as e:
+            logger.error(f"LLM响应数据无效: {str(e)}")
+            return None
+        except KeyError as e:
+            logger.error(f"LLM响应缺少必要字段: {str(e)}")
             return None
     
     def _create_vocabulary_prompt(self, word: str) -> str:
@@ -213,20 +239,8 @@ class OpenAICompatibleClient:
         Returns:
             格式化的提示词
         """
-        if self.model_capabilities.supports_thinking:
-            # 支持thinking的模型
-            prompt = f"""You are a comprehensive English dictionary. For the word "{word}", provide vocabulary information in JSON format.
-
-<think>
-Let me analyze the word "{word}" and provide comprehensive vocabulary information including dual pronunciation (British and American).
-
-1. First, I need to determine the standard dictionary form
-2. Provide clear definition
-3. Create practical example sentence
-4. Generate both British and American pronunciations
-5. Determine part of speech
-6. Ensure all fields are properly filled
-</think>
+        # 统一的提示词，让模型根据自身能力决定是否使用thinking
+        prompt = f"""You are a comprehensive English dictionary. For the word "{word}", provide vocabulary information in JSON format.
 
 Please respond with this exact JSON structure:
 
@@ -245,8 +259,17 @@ Please respond with this exact JSON structure:
 
 Requirements:
 - Use the standard dictionary form (e.g., "running" → "run")
-- Provide clear, accurate definitions
-- Give practical example sentences showing the word in context
+- **Definition guidelines:**
+  * Use simple, common words that intermediate English learners can understand
+  * Avoid using the target word itself or its variations in the definition
+  * Keep definitions concise (under 15 words when possible)
+  * Focus on the most common meaning if the word has multiple senses
+- **Example sentence guidelines:**
+  * Use everyday, practical situations that learners can relate to
+  * Make sentences 8-15 words long for easy comprehension
+  * Show the word's typical usage and context clearly
+  * Use simple sentence structures (avoid complex grammar)
+  * Make the target word's role in the sentence obvious
 - Use proper IPA notation for both British and American pronunciations
 - Keep part of speech concise (noun, verb, adjective, adverb, etc.)
 - All fields must be filled except audio URLs (MUST be empty strings "")
@@ -259,56 +282,8 @@ Requirements:
 Example for word "schedule":
 {{
     "word": "schedule",
-    "definition": "a plan of procedure, usually written, for a proposed objective",
-    "example": "I need to check my schedule for tomorrow's meetings.",
-    "pronunciation": "/ˈʃedjuːl/",
-    "british_pronunciation": "/ˈʃedjuːl/",
-    "american_pronunciation": "/ˈskedjuːl/",
-    "audio_url": "",
-    "british_audio_url": "",
-    "american_audio_url": "",
-    "part_of_speech": "noun"
-}}
-
-Now provide the JSON for "{word}"."""
-        
-        else:
-            # 普通模型
-            prompt = f"""You are a comprehensive English dictionary. For the word "{word}", provide vocabulary information in JSON format.
-
-Please respond with this exact JSON structure:
-
-{{
-    "word": "standard dictionary form of {word}",
-    "definition": "clear primary definition",
-    "example": "practical example sentence using the word",
-    "pronunciation": "IPA phonetic transcription (British, e.g., /ˈeksəmpl/)",
-    "british_pronunciation": "British IPA pronunciation (e.g., /ˈeksəmpl/)",
-    "american_pronunciation": "American IPA pronunciation (e.g., /ɪgˈzæmpl/)",
-    "audio_url": "",
-    "british_audio_url": "",
-    "american_audio_url": "",
-    "part_of_speech": "noun/verb/adjective/adverb/etc."
-}}
-
-Requirements:
-- Use the standard dictionary form (e.g., "running" → "run")
-- Provide clear, accurate definitions
-- Give practical example sentences showing the word in context
-- Use proper IPA notation for both British and American pronunciations
-- Keep part of speech concise (noun, verb, adjective, adverb, etc.)
-- All fields must be filled except audio URLs (MUST be empty strings "")
-- NEVER generate audio URLs - leave all audio_url fields as empty strings ""
-- Response must be valid JSON only
-- Focus on accuracy and educational value
-- British pronunciation should be the primary one (with stress marks)
-- American pronunciation should reflect US pronunciation differences
-
-Example for word "schedule":
-{{
-    "word": "schedule",
-    "definition": "a plan of procedure, usually written, for a proposed objective",
-    "example": "I need to check my schedule for tomorrow's meetings.",
+    "definition": "a list of planned activities or events with their times",
+    "example": "My work schedule is very busy this week.",
     "pronunciation": "/ˈʃedjuːl/",
     "british_pronunciation": "/ˈʃedjuːl/",
     "american_pronunciation": "/ˈskedjuːl/",
@@ -376,7 +351,9 @@ Now provide the JSON for "{word}"."""
             data = response.json()
             if "choices" in data and len(data["choices"]) > 0:
                 content = data["choices"][0]["message"]["content"]
-                logger.debug(f"LLM响应: {content[:100]}...")
+                # 安全记录响应（限制长度并过滤敏感信息）
+                safe_content = sanitize_for_log(content[:100])
+                logger.debug(f"LLM响应: {safe_content}...")
                 return content
             else:
                 logger.error("LLM响应格式错误")
@@ -409,12 +386,13 @@ Now provide the JSON for "{word}"."""
             if response.endswith("```"):
                 response = response[:-3]
             
-            # 处理thinking标签（用于支持thinking的模型）
-            if self.model_capabilities.supports_thinking and "<think>" in response:
-                # 找到</think>标签后的内容
+            # 处理thinking标签（某些模型会自动在响应中包含thinking过程）
+            if "<think>" in response:
+                # 找到</think>标签后的内容，跳过thinking部分
                 think_end = response.find("</think>")
                 if think_end != -1:
                     response = response[think_end + 8:].strip()
+                    logger.debug("检测到thinking标签，已跳过thinking部分")
             
             # 尝试多种方式提取JSON
             json_candidates = self._extract_json_candidates(response)
@@ -485,12 +463,29 @@ Now provide the JSON for "{word}"."""
                     continue
             
             logger.error("响应中未找到有效的JSON")
-            logger.debug(f"原始响应: {response[:500]}...")
+            safe_response = sanitize_for_log(response[:500])
+            logger.debug(f"原始响应: {safe_response}...")
             return None
                 
-        except Exception as e:
-            logger.error(f"解析LLM响应时发生异常: {str(e)}")
-            logger.debug(f"原始响应: {response[:500]}...")
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON解析失败: {str(e)}")
+            safe_response = sanitize_for_log(response[:500])
+            logger.debug(f"原始响应: {safe_response}...")
+            return None
+        except KeyError as e:
+            logger.error(f"JSON数据缺少必要字段: {str(e)}")
+            safe_response = sanitize_for_log(response[:500])
+            logger.debug(f"原始响应: {safe_response}...")
+            return None
+        except TypeError as e:
+            logger.error(f"数据类型错误: {str(e)}")
+            safe_response = sanitize_for_log(response[:500])
+            logger.debug(f"原始响应: {safe_response}...")
+            return None
+        except AttributeError as e:
+            logger.error(f"数据属性错误: {str(e)}")
+            safe_response = sanitize_for_log(response[:500])
+            logger.debug(f"原始响应: {safe_response}...")
             return None
     
     def _extract_json_candidates(self, response: str) -> List[str]:

@@ -18,6 +18,7 @@ from .config import (
     MAX_RETRIES,
     USER_AGENT
 )
+from .input_validator import validate_word_input, sanitize_word_input
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,15 @@ class CollinsAPI:
         Returns:
             包含词汇数据的字典，如果失败则返回None
         """
+        # 输入验证
+        is_valid, error_msg = validate_word_input(word)
+        if not is_valid:
+            logger.warning(f"无效的单词输入: {error_msg} - {word}")
+            return None
+        
+        # 清理输入
+        word = sanitize_word_input(word)
+        
         if not word.strip():
             logger.warning("搜索词为空")
             return None
@@ -89,6 +99,15 @@ class CollinsAPI:
         Returns:
             包含完整词汇数据的字典，包括双重发音信息
         """
+        # 输入验证
+        is_valid, error_msg = validate_word_input(word)
+        if not is_valid:
+            logger.warning(f"无效的单词输入: {error_msg} - {word}")
+            return None
+        
+        # 清理输入
+        word = sanitize_word_input(word)
+        
         if not word.strip():
             logger.warning("搜索词为空")
             return None
@@ -216,8 +235,16 @@ class CollinsAPI:
                     pronunciations = data['pronunciations']
                     logger.debug(f"获取到 {len(pronunciations)} 个发音文件: {word}")
                     
-        except Exception as e:
-            logger.debug(f"获取pronunciations API失败: {word} - {str(e)}")
+        except requests.exceptions.ConnectionError as e:
+            logger.debug(f"获取pronunciations API连接失败: {word} - {str(e)}")
+        except requests.exceptions.Timeout as e:
+            logger.debug(f"获取pronunciations API超时: {word} - {str(e)}")
+        except requests.exceptions.RequestException as e:
+            logger.debug(f"获取pronunciations API请求异常: {word} - {str(e)}")
+        except json.JSONDecodeError as e:
+            logger.debug(f"获取pronunciations API响应JSON解析失败: {word} - {str(e)}")
+        except KeyError as e:
+            logger.debug(f"获取pronunciations API响应缺少字段: {word} - {str(e)}")
         
         return pronunciations
     
@@ -243,8 +270,16 @@ class CollinsAPI:
                 if 'entryId' in data:
                     return data['entryId']
                     
-        except Exception as e:
-            logger.debug(f"获取entry ID失败: {word} - {str(e)}")
+        except requests.exceptions.ConnectionError as e:
+            logger.debug(f"获取entry ID连接失败: {word} - {str(e)}")
+        except requests.exceptions.Timeout as e:
+            logger.debug(f"获取entry ID超时: {word} - {str(e)}")
+        except requests.exceptions.RequestException as e:
+            logger.debug(f"获取entry ID请求异常: {word} - {str(e)}")
+        except json.JSONDecodeError as e:
+            logger.debug(f"获取entry ID响应JSON解析失败: {word} - {str(e)}")
+        except KeyError as e:
+            logger.debug(f"获取entry ID响应缺少字段: {word} - {str(e)}")
         
         return None
     
@@ -296,8 +331,8 @@ class CollinsAPI:
             except requests.exceptions.RequestException as e:
                 logger.warning(f"API请求失败 - {word} (词典: {dictionary}, 尝试 {attempt + 1}/{MAX_RETRIES}): {str(e)}")
                     
-            except Exception as e:
-                logger.error(f"查询单词时发生异常 - {word} (词典: {dictionary}): {str(e)}")
+            except (ValueError, TypeError, AttributeError) as e:
+                logger.error(f"查询单词时发生数据处理异常 - {word} (词典: {dictionary}): {str(e)}")
                 return None
         
         logger.debug(f"所有重试都失败 - {word} (词典: {dictionary})")

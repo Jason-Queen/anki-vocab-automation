@@ -7,31 +7,46 @@
 
 > **语言选择:** [English](README.md) | [中文](README_CN.md)
 
-**使用柯林斯词典API和AI语言模型自动创建Anki词汇卡片。**
+**使用柯林斯词典API和AI语言模型自动创建专为英语学习者优化的Anki词汇卡片。**
 
-通过智能自动化工具，批量将单词列表转换为简洁的Anki记忆卡片。
+通过智能自动化工具，批量将单词列表转换为学习者友好的、简洁高效的Anki记忆卡片。
+
+请注意，本程序完全由AI开发，未经人类开发者的验证，请谨慎使用。
 
 ## 🎯 项目初衷
 
-我希望在阅读英语内容时可以及时收集自己专属的生词本，并利用Anki卡牌进行强化学习。
+我希望在阅读英语内容时可以及时收集自己专属的生词本，并利用Anki卡牌进行强化学习。程序专门为中级英语学习者设计，提供易于理解的定义和实用的例句。
 
 ## ✨ 核心功能
 
-### 📚 **全面的词汇数据**
-- **多数据源支持：** 柯林斯词典API + AI语言模型
-- **基础信息：** 定义、例句、IPA发音、音频URL
-- **智能词汇匹配：** 自动查找标准词典形式
-- **双重发音支持：** 英式和美式发音
+### 📚 **学习者友好的词汇内容**
+- **优化的定义：** 使用简单常见词汇解释，避免循环定义，15词以内的简洁表达
+- **实用例句：** 8-15词长度，日常情境，简单句式结构，突出目标词汇用法
+- **多数据源支持：** 柯林斯词典API + AI语言模型智能生成
+- **双重发音支持：** 英式和美式IPA音标及音频
 
-### 🤖 **AI驱动的灵活性**
-- **通用LLM支持：** 兼容OpenAI、Claude、LM Studio、Ollama等
-- **动态模型检测：** 自动检测本地LLM服务的可用模型
-- **自定义TTS生成：** 在词典音频不可用时创建音频
+### 🤖 **AI驱动的智能生成**
+- **通用LLM支持：** 兼容OpenAI、Claude、LM Studio、Ollama等所有OpenAI API兼容服务
+- **智能模型检测：** 自动识别模型能力（如thinking标签支持）并优化提示词
+- **学习导向优化：** AI专门针对英语学习者需求调教，生成易懂内容
+- **自定义TTS生成：** 在词典音频不可用时智能创建发音音频
 
-### 🎯 **Anki集成**
-- **直接导入：** 使用AnkiConnect无缝创建卡片
-- **重复检测：** 自动跳过已存在的卡片
-- **统一命名：** 卡片模板与牌组使用相同名称，保持一致性
+### 🚀 **高性能处理**
+- **并发处理：** 多线程批量处理，显著提升大词汇表处理速度
+- **智能重试：** 自动重试机制，确保处理成功率
+- **速率限制：** 可配置的API调用频率控制，避免超出服务限制
+- **进度追踪：** 实时显示处理进度和成功率统计
+
+### 🔒 **安全性增强**
+- **输入验证：** 全面的用户输入安全验证，防止注入攻击
+- **安全日志：** 自动过滤敏感信息的安全日志记录系统
+- **依赖安全：** 使用最新版本依赖，修复已知安全漏洞(CVE)
+
+### 🎯 **Anki完美集成**
+- **直接导入：** 使用AnkiConnect无缝创建卡片，无需手动导入
+- **媒体管理：** 完美的Anki媒体库集成，音频文件自动管理
+- **重复检测：** 智能跳过已存在的卡片，避免重复创建
+- **模板一致性：** 卡片模板与牌组使用相同名称，保持整洁
 
 ## 🚀 快速开始
 
@@ -83,6 +98,7 @@ echo -e "sophisticated\nimplementation\noptimization" > data/New_Words.txt
 python app.py
 
 # 选择选项1: 运行自动化脚本
+# 选择选项2: 使用并发处理（推荐用于大词汇表）
 ```
 
 ## 📖 工作原理
@@ -90,91 +106,107 @@ python app.py
 ### 输入格式
 创建一个简单的文本文件，每行一个单词：
 ```
-investigation
-bidirectional
-fundamental
-consequence
+Apple
+Cat
+Yellow
+Train
 ```
 
-### 处理流程
-1. **单词分析：** 确定标准词典形式
-2. **数据获取：** 从柯林斯API获取或用AI生成
-3. **音频处理：** 使用词典的音频或生成TTS
-4. **卡片创建：** 直接导入Anki
+### 智能处理流程
+1. **输入验证：** 安全验证和清理用户输入
+2. **单词分析：** 自动确定标准词典形式
+3. **内容生成：** 从柯林斯API获取或用AI生成学习者友好的内容
+4. **音频处理：** 优先使用词典音频，备选智能TTS生成
+5. **并发优化：** 多线程并行处理，提升效率
+6. **卡片创建：** 直接导入Anki，完美媒体集成
 
-### 生成的卡片
-每张卡片包含：
+### 生成的学习者友好卡片
+每张卡片专为英语学习者优化：
 - **单词：** 标准词典形式
-- **定义：** 清晰、适合学习者的解释
-- **例句：** 实用的上下文用法
-- **发音：** IPA音标转录（英式和美式）
-- **音频：** 发音音频文件
-- **词性：** 语法分类
+- **定义：** 使用简单词汇，避免循环，15词以内
+- **例句：** 日常情境，8-15词，简单句式，突出用法
+- **发音：** 清晰的IPA音标（英式和美式）
+- **音频：** 高质量发音音频文件
+- **词性：** 简洁的语法分类
 
 ## 🛠️ 高级配置
 
 ### 数据源策略
-- `collins_first`: 使用柯林斯API，备选AI
-- `llm_first`: 使用AI，备选柯林斯API
+- `collins_first`: 使用柯林斯API，备选AI（质量优先）
+- `llm_first`: 使用AI，备选柯林斯API（速度优先）
 - `collins_only`: 仅柯林斯API
-- `llm_only`: 仅AI
+- `llm_only`: 仅AI（适合离线使用）
+
+### 并发处理配置
+```env
+# 并发处理设置
+MAX_WORKERS=4              # 最大并发线程数
+RATE_LIMIT_PER_SECOND=2.0  # API调用频率限制
+RETRY_ATTEMPTS=2           # 失败重试次数
+TIMEOUT_PER_WORD=60        # 单词处理超时时间
+```
 
 ### 支持的AI服务
 
 #### 云端服务
-- **OpenAI:** GPT-4, GPT-3.5-turbo
-- **Anthropic:** Claude 3.5 Sonnet, Claude 3 Opus
+- **OpenAI:** GPT-4, GPT-4O, GPT-3.5-turbo
+- **Anthropic:** Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
+- **OpenAI O1系列:** O1-preview, O1-mini (支持thinking能力)
 
 #### 本地LLM服务
-- **LM Studio:** 本地模型，OpenAI兼容API
+- **LM Studio:** 本地模型，完全OpenAI兼容
 - **Ollama:** 简单的本地模型部署
 - **Text Generation WebUI:** 高级本地模型管理
+- **任何OpenAI API兼容服务**
 
-#### 配置示例
+#### 智能模型配置
+程序自动检测模型能力并优化：
 ```env
 # OpenAI
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_MODEL_NAME=gpt-4o-mini
 LLM_API_KEY=your_openai_api_key
 
-# Anthropic Claude
+# Anthropic Claude (支持thinking)
 LLM_BASE_URL=https://api.anthropic.com/v1
 LLM_MODEL_NAME=claude-3-5-sonnet-20241022
 LLM_API_KEY=your_anthropic_api_key
 
 # LM Studio (本地)
 LLM_BASE_URL=http://localhost:1234
-LLM_MODEL_NAME=llama3.2-3b-instruct
+LLM_MODEL_NAME=qwen2.5-7b-instruct
 LLM_API_KEY=not-needed
 
 # Ollama (本地)
-LLM_BASE_URL=http://localhost:11434
-LLM_MODEL_NAME=llama3
+LLM_BASE_URL=http://localhost:11434/v1
+LLM_MODEL_NAME=llama3.2
 LLM_API_KEY=not-needed
 ```
 
 ### TTS音频生成
-- **Google TTS:** 高质量、可靠
-- **Microsoft TTS:** 自然语音
+- **Google TTS:** 高质量、可靠（默认推荐）
+- **Microsoft TTS:** 自然语音合成
 - **ResponsiveVoice:** 额外语音选项
 
 ## 📊 输出示例
 
-**终端显示：**
+**终端显示（并发处理）：**
 ```
-Processing: 3/10 - sophisticated
-✓ Found in american-learner dictionary
-✓ Successfully added card: sophisticated
-✓ Audio: Real pronunciation available
+开始批量处理 10 个单词 (并发度: 4)
+✅ [3/10] sophisticated (2.1s)
+✅ [4/10] implementation (1.8s)  
+❌ [5/10] xyz - 输入验证失败: 单词包含不允许的字符 (0.1s)
+进度: 5/10 (成功: 4, 失败: 1)
+批量处理完成: 总耗时 15.2s, 平均 1.5s/词, 成功 9/10
 ```
 
-**Anki卡片：**
+**Anki卡片（学习者优化）：**
 ```
 正面: sophisticated
-例句: The software uses sophisticated algorithms to analyze data.
+例句: This software uses sophisticated methods to solve problems.
 
 背面: 
-定义: having great knowledge or experience; complex and refined
+定义: having great knowledge or experience; advanced and complex
 发音: 
 🇬🇧 英式: /səˈfɪstɪkeɪtɪd/
 🇺🇸 美式: /səˈfɪstɪkeɪtɪd/
@@ -195,25 +227,40 @@ Processing: 3/10 - sophisticated
    - 检查API密钥和基础URL
    - 对于本地服务，确保它们正在运行
    - 使用选项4重新配置LLM服务
+   - 查看安全日志了解详细错误信息
 
-3. **模板创建失败**
+3. **并发处理问题**
+   - 降低MAX_WORKERS数值（建议2-4）
+   - 增加RATE_LIMIT_PER_SECOND间隔
+   - 检查网络稳定性和API限制
+
+4. **模板创建失败**
    - 如果模板存在但字段不完整，在Anki中手动删除该模板
    - 程序将创建具有正确字段的新模板
 
-4. **柯林斯API问题**
-   - 验证API密钥是否有效
-   - 检查网络连接
-   - 考虑切换到仅LLM策略
+5. **安全警告**
+   - 程序会自动验证和清理输入
+   - 查看日志文件了解被过滤的内容
+   - 确保单词文件来源可信
 
 ### 获取帮助
 
-- 查看 `anki_vocab_automation.log` 中的日志
+- 查看 `anki_vocab_automation.log` 中的安全日志
 - 使用选项6查看当前配置
 - 使用选项9运行综合测试
+- 检查依赖版本是否为最新安全版本
+
+### 性能优化建议
+
+- **小词汇表（<50词）：** 使用默认单线程处理
+- **中等词汇表（50-200词）：** 启用并发处理，设置max_workers=4
+- **大词汇表（>200词）：** 使用并发处理，适当调整速率限制
+- **本地LLM：** 可以提高并发度和降低速率限制
 
 ---
 
 <div align="center">
-  <strong>学习愉快！ 📚✨</strong>
+  <strong>本程序完全由Cursor程序以及背后的LLM AI驱动生成，请注意AI可能犯错！ 📚✨</strong>
   <br><br>
+  <em>现在支持并发处理、安全验证、智能优化等高级特性</em>
 </div>

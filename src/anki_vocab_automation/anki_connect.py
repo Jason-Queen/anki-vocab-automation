@@ -249,10 +249,7 @@ class AnkiConnect:
           <span class="pronunciation-text">{{BritishPronunciation}}</span>
         </div>
         {{#BritishAudioFilename}}
-        <audio controls class="pronunciation-audio">
-          <source src="{{BritishAudioFilename}}" type="audio/mpeg">
-          Your browser does not support the audio element.
-        </audio>
+        <div class="audio-container">[sound:{{BritishAudioFilename}}]</div>
         {{/BritishAudioFilename}}
       </div>
       
@@ -265,10 +262,7 @@ class AnkiConnect:
           <span class="pronunciation-text">{{AmericanPronunciation}}</span>
         </div>
         {{#AmericanAudioFilename}}
-        <audio controls class="pronunciation-audio">
-          <source src="{{AmericanAudioFilename}}" type="audio/mpeg">
-          Your browser does not support the audio element.
-        </audio>
+        <div class="audio-container">[sound:{{AmericanAudioFilename}}]</div>
         {{/AmericanAudioFilename}}
       </div>
       {{/AmericanPronunciation}}
@@ -396,11 +390,18 @@ class AnkiConnect:
       font-weight: 500;
     }
     
-    .pronunciation-audio {
-      width: 100%;
-      max-width: 300px;
-      height: 32px;
-      margin-top: 0.25em;
+    .audio-container {
+      margin-top: 0.5em;
+      padding: 0.25em;
+      background-color: rgba(255, 255, 255, 0.7);
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .audio-container {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
     }
     
     /* 移动设备优化 */
@@ -413,11 +414,6 @@ class AnkiConnect:
       
       .pronunciation-text {
         font-size: 1em;
-      }
-      
-      .pronunciation-audio {
-        width: 100%;
-        max-width: none;
       }
     }"""
         

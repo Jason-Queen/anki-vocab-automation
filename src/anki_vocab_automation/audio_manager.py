@@ -13,6 +13,8 @@ from urllib.parse import urlparse
 import tempfile
 import time
 
+from .input_validator import InputValidator
+
 logger = logging.getLogger(__name__)
 
 class AudioManager:
@@ -92,8 +94,11 @@ class AudioManager:
         except requests.exceptions.RequestException as e:
             logger.error(f"下载音频失败 - {word}: {str(e)}")
             return None
-        except Exception as e:
-            logger.error(f"下载音频时发生异常 - {word}: {str(e)}")
+        except (OSError, IOError) as e:
+            logger.error(f"下载音频时文件操作异常 - {word}: {str(e)}")
+            return None
+        except (ValueError, TypeError) as e:
+            logger.error(f"下载音频时数据处理异常 - {word}: {str(e)}")
             return None
     
     def _clean_url(self, url: str) -> str:
@@ -123,29 +128,46 @@ class AudioManager:
     
     def _generate_filename(self, word: str, url: str) -> str:
         """
-        生成音频文件名
+        生成安全的音频文件名
         
         Args:
             word: 单词
             url: 音频URL
             
         Returns:
-            文件名
+            安全的文件名
         """
-        # 使用单词和URL哈希生成唯一文件名
-        url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-        safe_word = "".join(c for c in word if c.isalnum() or c in "._-")[:20]
+        # 使用安全的文件名清理器
+        safe_word = InputValidator.sanitize_filename(word)[:20]
         
-        # 尝试从URL获取文件扩展名
+        # 如果清理后的word为空或无效，使用默认名称
+        if not safe_word or safe_word in ['', 'sanitized_file']:
+            safe_word = 'audio'
+        
+        # 使用URL哈希生成唯一标识
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+        
+        # 安全地提取文件扩展名
         parsed_url = urlparse(url)
         path = parsed_url.path
-        if path and '.' in path:
-            ext = path.split('.')[-1].lower()
-            if ext in ['mp3', 'wav', 'ogg', 'm4a', 'aac']:
-                return f"{safe_word}_{url_hash}.{ext}"
+        ext = 'mp3'  # 默认扩展名
         
-        # 默认使用mp3扩展名
-        return f"{safe_word}_{url_hash}.mp3"
+        if path and '.' in path:
+            potential_ext = path.split('.')[-1].lower()
+            # 只允许已知的音频扩展名
+            allowed_extensions = {'mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'}
+            if potential_ext in allowed_extensions:
+                # 进一步验证扩展名不包含危险字符
+                if potential_ext.isalnum():
+                    ext = potential_ext
+        
+        # 生成最终文件名并确保安全
+        filename = f"{safe_word}_{url_hash}.{ext}"
+        
+        # 最后一次安全检查
+        filename = InputValidator.sanitize_filename(filename)
+        
+        return filename
     
     def _is_valid_audio_content_type(self, content_type: str) -> bool:
         """
@@ -185,7 +207,7 @@ class AudioManager:
                     if file_age > max_age_seconds:
                         file_path.unlink()
                         logger.debug(f"删除过期临时文件: {file_path.name}")
-        except Exception as e:
+        except (OSError, IOError, PermissionError) as e:
             logger.warning(f"清理临时文件失败: {str(e)}")
     
     def get_audio_info(self, file_path: str) -> Optional[dict]:
@@ -198,6 +220,12 @@ class AudioManager:
         Returns:
             音频信息字典，如果失败则返回None
         """
+        # 验证文件路径安全性
+        is_valid, error_msg = InputValidator.validate_file_path(file_path)
+        if not is_valid:
+            logger.warning(f"无效的文件路径: {error_msg} - {file_path}")
+            return None
+        
         try:
             path = Path(file_path)
             if not path.exists():
@@ -210,7 +238,7 @@ class AudioManager:
                 'modified': stat.st_mtime,
                 'exists': True
             }
-        except Exception as e:
+        except (OSError, IOError, FileNotFoundError) as e:
             logger.warning(f"获取音频信息失败 - {file_path}: {str(e)}")
             return None
     

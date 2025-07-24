@@ -1,4 +1,9 @@
-requests>=2.28.0
-beautifulsoup4>=4.11.0
-lxml>=4.9.0 
-python-dotenv>=0.19.0 
+# Core HTTP library with security fixes
+requests==2.32.4  # CVE-2024-47081 fixed
+
+# HTML/XML parsing libraries
+beautifulsoup4==4.13.4  # Latest stable version
+lxml==6.0.0  # CVE-2021-43818 and CVE-2021-28957 fixed
+
+# Environment variable management
+python-dotenv==1.1.1  # Latest stable version 

@@ -13,6 +13,13 @@ from .html_parser import HTMLParser
 from .anki_connect import AnkiConnect
 from .openai_compatible_client import OpenAICompatibleClient
 from .audio_manager import AudioManager
+from .concurrent_processor import (
+    ConcurrentProcessor, 
+    ProcessingResult, 
+    ProcessingStats,
+    create_progress_callback,
+    process_words_concurrently
+)
 from .config import (
     COLLINS_API_KEY,
     WORD_LIST_FILE,
@@ -156,6 +163,110 @@ class VocabularyAutomation:
             if i < len(word_list):  # 最后一个单词不需要延迟
                 time.sleep(REQUEST_DELAY)
         
+        self._print_stats()
+    
+    def process_word_list_concurrent(self, 
+                                   word_list: List[str], 
+                                   max_workers: int = 4,
+                                   rate_limit: float = 2.0) -> None:
+        """
+        并发处理单词列表（实时添加到Anki版本）
+        
+        Args:
+            word_list: 单词列表
+            max_workers: 最大并发工作线程数
+            rate_limit: 速率限制（每秒请求数）
+        """
+        if not self.anki_connect.check_connection():
+            logger.error("无法连接到Anki Connect")
+            return
+        
+        if not self.anki_connect.ensure_deck_exists():
+            logger.error("无法创建或访问卡牌组")
+            return
+        
+        # 确保支持双重发音的模板存在
+        if not self.anki_connect.ensure_model_exists():
+            logger.error("无法创建或访问词汇模板")
+            return
+        
+        self.stats["total"] = len(word_list)
+        logger.info(f"开始并发处理 {len(word_list)} 个单词 (并发度: {max_workers}, 速率: {rate_limit}/s)")
+        logger.info("💡 改进: 每个单词处理完成后立即添加到Anki，无需等待所有单词完成")
+        
+        # 创建并发处理器
+        processor = ConcurrentProcessor(
+            max_workers=max_workers,
+            rate_limit_per_second=rate_limit,
+            timeout_per_word=120.0,  # 每个单词2分钟超时
+            retry_attempts=2
+        )
+        
+        # 创建实时进度回调 - 边处理边添加到Anki
+        def progress_callback(current: int, total: int, result: ProcessingResult):
+            if result.success and result.result:
+                try:
+                    # 检查重复
+                    if self.anki_connect.find_duplicate(result.result.word):
+                        logger.info(f"⚠️  [{current}/{total}] {result.word} - 跳过重复单词")
+                        self.stats["duplicates"] += 1
+                        return
+                    
+                    # 处理音频
+                    logger.debug(f"处理音频: {result.result.word}")
+                    if not self._process_card_audio(result.result):
+                        logger.warning(f"音频处理失败，但仍继续添加卡片: {result.result.word}")
+                    
+                    # 立即添加到Anki
+                    if self.anki_connect.add_note(result.result):
+                        self.stats["success"] += 1
+                        logger.info(f"🎉 [{current}/{total}] {result.word} - 成功添加到Anki! ({result.processing_time:.1f}s)")
+                        # 确定数据源
+                        if hasattr(result.result, 'source'):
+                            if result.result.source == 'collins':
+                                self.stats["collins_used"] += 1
+                            elif result.result.source == 'llm':
+                                self.stats["llm_used"] += 1
+                    else:
+                        self.stats["failed"] += 1
+                        logger.error(f"❌ [{current}/{total}] {result.word} - 添加到Anki失败")
+                        
+                except Exception as e:
+                    logger.error(f"添加卡片到Anki失败 - {result.result.word}: {e}")
+                    self.stats["failed"] += 1
+                    import traceback
+                    logger.error(f"异常详情: {traceback.format_exc()}")
+            else:
+                self.stats["not_found"] += 1
+                if result.success:
+                    logger.warning(f"⚠️  [{current}/{total}] {result.word} - 处理成功但无结果")
+                else:
+                    logger.error(f"❌ [{current}/{total}] {result.word} - 处理失败: {result.error}")
+        
+        # 定义单词处理函数
+        def process_word_func(word: str):
+            return self._get_vocabulary_card(word)
+        
+        try:
+            logger.info("🚀 开始实时并发处理...")
+            
+            # 执行并发处理（现在会实时添加到Anki）
+            results, stats = processor.process_words_batch(
+                word_list, 
+                process_word_func, 
+                progress_callback
+            )
+            
+            logger.info(f"✅ 并发处理全部完成!")
+            logger.info(f"📊 最终统计: 处理={len(results)}, 成功={self.stats['success']}, 失败={self.stats['failed']}, 重复={self.stats['duplicates']}")
+            logger.info(f"⏱️  总耗时: {stats.total_time:.2f}s, 平均: {stats.average_time_per_word:.2f}s/词")
+            
+        except Exception as e:
+            logger.error(f"并发处理过程中发生异常: {e}")
+            import traceback
+            logger.error(f"异常详情: {traceback.format_exc()}")
+        
+        logger.info("开始打印最终统计信息...")
         self._print_stats()
     
     def _process_single_word(self, word: str) -> bool:
