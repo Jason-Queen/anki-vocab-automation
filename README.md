@@ -1,7 +1,7 @@
 # 🚀 Anki Vocabulary Learning Automation Tool
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![GitLab issues](https://img.shields.io/badge/GitLab-issues-blue.svg)](https://gitlab.com/jason853/anki-automation/-/issues)
 [![GitLab stars](https://img.shields.io/badge/GitLab-stars-blue.svg)](https://gitlab.com/jason853/anki-automation)
 
@@ -26,8 +26,8 @@ I wanted to collect my own personalized vocabulary list while reading English co
 - **Dual Pronunciation Support:** British and American IPA phonetic transcription and audio
 
 ### 🤖 **AI-Driven Intelligent Generation**
-- **Universal LLM Support:** Compatible with OpenAI, Claude, LM Studio, Ollama, and all OpenAI API-compatible services
-- **Intelligent Model Detection:** Automatically detect model capabilities (such as thinking tag support) and optimize prompts
+- **Provider-Aware LLM Support:** Official SDK paths for OpenAI and Anthropic, plus LM Studio, Ollama, and third-party OpenAI-compatible backends
+- **Selectable API Modes:** Responses API, Chat Completions API, and Anthropic Messages API
 - **Learning-Oriented Optimization:** AI specifically tuned for English learner needs, generating easy-to-understand content
 - **Custom TTS Generation:** Intelligently create pronunciation audio when dictionary audio is unavailable
 
@@ -52,7 +52,8 @@ I wanted to collect my own personalized vocabulary list while reading English co
 
 ### 1. Requirements
 
-- **Python 3.8+**
+- **Python 3.9+**
+- **uv** ([installation guide](https://docs.astral.sh/uv/getting-started/installation/))
 - **Anki Desktop** (with AnkiConnect plugin installed)
 - **Collins Dictionary API Key** (optional) or **AI Service** (OpenAI, Claude, or local LLM)
 
@@ -63,21 +64,18 @@ I wanted to collect my own personalized vocabulary list while reading English co
 git clone https://gitlab.com/jason853/anki-automation.git
 cd anki-automation
 
-# Run setup script to create virtual environment and install dependencies
-python setup.py
+# Install runtime dependencies
+uv sync
 
-# Activate virtual environment
-# macOS/Linux:
-source venv/bin/activate
-# Windows:
-venv\Scripts\activate
+# If you plan to run tests or lint checks
+uv sync --extra dev --extra test
 ```
 
 ### 3. Configuration
 
 ```bash
 # Start interactive configuration wizard
-python app.py
+uv run python app.py
 
 # Follow the setup wizard:
 # 1. Select option 7: Create configuration file (if needed)
@@ -95,21 +93,61 @@ python app.py
 echo -e "sophisticated\nimplementation\noptimization" > data/New_Words.txt
 
 # Start application
-python app.py
+uv run python app.py
 
 # Select option 1: Run automation script
 # Select option 2: Use concurrent processing (recommended for large vocabularies)
 ```
 
+### 5. Local Anki Smoke Test
+
+Use this as the first check in a coding session when you want to see the current import result in Anki immediately.
+
+If you have not installed test dependencies yet, run `uv sync --extra test` once first.
+
+1. Keep `ANKI_LOCAL_TEST_RUN=false` in `config.env`.
+2. Set `ANKI_LOCAL_TEST_PROFILE` to your dedicated Anki test profile.
+3. Keep `ANKI_LOCAL_TEST_DECK` on a disposable deck such as `Vocabulary_LocalSmoke`. The smoke test deletes old notes in that deck before importing a fresh sample.
+4. Optional: set `ANKI_LOCAL_TEST_SOURCE_EXAMPLE` if you want to verify the new front-side context sentence flow.
+5. Start Anki with that test profile and AnkiConnect enabled.
+6. Run:
+
+```bash
+ANKI_LOCAL_TEST_RUN=1 uv run pytest tests/test_local_anki_import.py -m local_anki -s
+```
+
+The test writes the latest imported note snapshot to `tests/.artifacts/local_anki_import_latest.json` so you can compare fields and media quickly after each run.
+
+### 6. Development Checks
+
+If you are working on the project itself, install maintainer dependencies first:
+
+```bash
+uv sync --extra dev --extra test
+```
+
+Then run the common checks with `uv`:
+
+```bash
+uv run pytest tests/ -v --cov=src/anki_vocab_automation --cov-report=xml
+uv run flake8 src/
+uv run --with safety safety check --json > safety-report.json
+uv run --with bandit bandit -r src/ -f json -o bandit-report.json
+```
+
 ## 📖 How It Works
 
 ### Input Format
-Create a simple text file with one word per line:
+Recommended format: `word<TAB>sentence where you saw the word`.
+
+Plain word-only lines still work, but if you provide the sentence context the generated definition is usually more accurate.
+
+Examples:
 ```
-Apple
-Cat
-Yellow
-Train
+clarify	I asked the teacher to clarify the lesson.
+fundamental	The report explains the fundamental problem in the design.
+schedule | We need to change the meeting schedule again.
+implementation
 ```
 
 ### Intelligent Processing Flow
@@ -124,7 +162,8 @@ Train
 Each card is optimized for English learners:
 - **Word:** Standard dictionary form
 - **Definition:** Use simple vocabulary, avoid circular definitions, within 15 words
-- **Example:** Daily situations, 8-15 words, simple sentence structure, highlighting usage
+- **Front Example:** The learner-provided sentence when available
+- **Back Example:** A new generated sentence distinct from the learner sentence and explicitly containing the target word
 - **Pronunciation:** Clear IPA phonetic transcription (British and American)
 - **Audio:** High-quality pronunciation audio files
 - **Part of Speech:** Concise grammatical classification
@@ -153,45 +192,142 @@ TIMEOUT_PER_WORD=60        # Word processing timeout
 
 ### Supported AI Services
 
-#### Cloud Services
-- **OpenAI:** GPT-4, GPT-4O, GPT-3.5-turbo
-- **Anthropic:** Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
-- **OpenAI O1 Series:** O1-preview, O1-mini (supports thinking capability)
+#### Official Cloud Providers
+- **OpenAI:** Uses the official OpenAI SDK; `gpt-oss` models use the Responses API, other models use Chat Completions + JSON Schema
+- **Anthropic:** Uses the official Anthropic SDK and the Messages API
 
-#### Local LLM Services
-- **LM Studio:** Local models, fully OpenAI compatible
-- **Ollama:** Simple local model deployment
-- **Text Generation WebUI:** Advanced local model management
-- **Any OpenAI API-compatible service**
+#### Local and Self-Hosted Providers
+- **LM Studio:** Auto-routes `gpt-oss` models to Responses API and other models to Chat Completions + JSON Schema
+- **Ollama:** Auto-routes `gpt-oss` models to Responses API and other models to Chat Completions + JSON Schema
+- **Third-party OpenAI-compatible backends:** Supported in Chat Completions compatibility mode, with JSON Schema when available
 
-#### Intelligent Model Configuration
-Program automatically detects model capabilities and optimizes:
+#### Recommended Configuration Examples
 ```env
-# OpenAI
+# OpenAI official
+LLM_PROVIDER=openai
+LLM_API_MODE=chat
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_MODEL_NAME=gpt-4o-mini
 LLM_API_KEY=your_openai_api_key
 
-# Anthropic Claude (supports thinking)
-LLM_BASE_URL=https://api.anthropic.com/v1
+# OpenAI / LM Studio gpt-oss
+LLM_PROVIDER=lmstudio
+LLM_API_MODE=responses
+LLM_BASE_URL=http://localhost:1234
+LLM_MODEL_NAME=openai/gpt-oss-20b
+LLM_API_KEY=not-needed
+LLM_GPT_OSS_REASONING_EFFORT=medium
+
+# Anthropic official
+LLM_PROVIDER=anthropic
+LLM_API_MODE=messages
+LLM_BASE_URL=https://api.anthropic.com
 LLM_MODEL_NAME=claude-3-5-sonnet-20241022
 LLM_API_KEY=your_anthropic_api_key
 
-# LM Studio (local)
+# LM Studio auto-routing
+LLM_PROVIDER=lmstudio
+LLM_API_MODE=auto
 LLM_BASE_URL=http://localhost:1234
-LLM_MODEL_NAME=qwen2.5-7b-instruct
+# Leave blank to use the currently loaded model automatically
+LLM_MODEL_NAME=
 LLM_API_KEY=not-needed
 
-# Ollama (local)
-LLM_BASE_URL=http://localhost:11434/v1
-LLM_MODEL_NAME=llama3.2
+# LM Studio explicit Chat API
+LLM_PROVIDER=lmstudio
+LLM_API_MODE=chat
+LLM_BASE_URL=http://localhost:1234
+# Or set an explicit model name when you do not want the loaded-model default
+LLM_MODEL_NAME=qwen/qwen3.5-9b
 LLM_API_KEY=not-needed
+
+# Ollama auto-routing
+LLM_PROVIDER=ollama
+LLM_API_MODE=auto
+LLM_BASE_URL=http://localhost:11434
+# Leave blank to use the currently running model automatically
+LLM_MODEL_NAME=
+LLM_API_KEY=not-needed
+
+# Third-party OpenAI-compatible backend
+LLM_PROVIDER=openai_compat
+LLM_API_MODE=chat
+LLM_BASE_URL=https://your-provider.example.com
+LLM_MODEL_NAME=your-model-name
+LLM_API_KEY=your_provider_key
 ```
 
+For LM Studio and Ollama:
+- If `LLM_MODEL_NAME` is blank, the app uses the currently loaded/running model.
+- If multiple models are currently loaded/running, the app stops and asks you to set `LLM_MODEL_NAME` explicitly.
+- If no model is currently loaded/running, generation stops with an error instead of guessing.
+- If you set `LLM_MODEL_NAME` manually, that value is used, but the app now checks that the model exists first.
+- When the selected model is in the `gpt-oss` family, generation uses the Responses API and defaults `LLM_GPT_OSS_REASONING_EFFORT=medium`.
+- Other local models use Chat Completions + JSON Schema to reduce reasoning-only outputs and improve structured JSON reliability.
+
+Maintainer note:
+- The current local-model benchmark conclusion and prompt-comparison summary are recorded in [docs/llm-benchmark-phase-summary-2026-03.md](docs/llm-benchmark-phase-summary-2026-03.md).
+
 ### TTS Audio Generation
-- **Google TTS:** High quality, reliable (default recommended)
-- **Microsoft TTS:** Natural speech synthesis
-- **ResponsiveVoice:** Additional voice options
+- **OpenAI-compatible remote TTS:** Preferred path for new setups; works with local or remote `/v1/audio/speech` servers such as `Qwen3-TTS-MLX-Server`
+- **Google TTS / Microsoft TTS / ResponsiveVoice:** Legacy URL-based compatibility fallbacks for users who explicitly opt in
+
+Example configuration for an OpenAI-compatible TTS server:
+
+```env
+ENABLE_TTS_FALLBACK=true
+TTS_OPENAI_COMPAT_BASE_URL=http://127.0.0.1:8000
+TTS_OPENAI_COMPAT_API_KEY=not-needed
+TTS_OPENAI_COMPAT_MODEL=mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16
+TTS_OPENAI_COMPAT_RESPONSE_FORMAT=wav
+```
+
+Notes:
+- If `TTS_OPENAI_COMPAT_BASE_URL` is configured, the app uses `openai_compat` as the primary TTS path
+- `TTS_SERVICE` now means an optional legacy URL-based compatibility fallback; leave it blank if you do not want those brittle public URL paths at all
+- If `TTS_OPENAI_COMPAT_MODEL` is unset, the app reads the server `default_model` from `/health`
+- The fallback automatically asks for British or American English accents for `en-GB` and `en-US`
+- If you switch to a `CustomVoice` model, also set `TTS_OPENAI_COMPAT_VOICE`
+- `Base` voice-clone models require `ref_audio`, so they are not suitable for the generic pronunciation fallback
+- The card back now shows the audio source so learners can tell `Dictionary` audio from `TTS`
+
+Example if you explicitly want a legacy compatibility fallback:
+
+```env
+TTS_SERVICE=google
+```
+
+### Source And Audio Fallback Matrix
+
+Keep one rule in mind:
+- `DATA_SOURCE_STRATEGY` controls where the card content comes from
+- The audio fallback chain only runs when the current card is missing audio
+
+Content-source behavior:
+
+| Setting | Default card-content order |
+| --- | --- |
+| `collins_only` | `Collins` |
+| `collins_first` | `Collins -> LLM` |
+| `llm_only` | `LLM` |
+| `llm_first` | `LLM -> Collins` |
+
+Word-audio behavior:
+
+| Condition | Default word-audio order |
+| --- | --- |
+| Card already has dictionary audio | `Dictionary` |
+| Card is missing audio and `TTS_OPENAI_COMPAT_BASE_URL` is configured | `openai_compat TTS -> optional legacy TTS_SERVICE` |
+| Card is missing audio and only `TTS_SERVICE` is configured | `legacy TTS_SERVICE` |
+| Card is missing audio and neither is configured | `no TTS fallback` |
+
+Common combinations:
+
+| Configuration | Typical effective path |
+| --- | --- |
+| `collins_first` + local TTS | `Collins content/dictionary audio -> if missing, openai_compat TTS -> optional legacy TTS` |
+| `llm_only` + local TTS | `LLM content -> openai_compat TTS -> optional legacy TTS` |
+| `llm_first` + local TTS | `LLM content -> if LLM fails, Collins -> if audio is missing, openai_compat TTS -> optional legacy TTS` |
 
 ## 📊 Output Examples
 
@@ -270,4 +406,4 @@ Part of Speech: adjective
   <strong>This program is entirely driven by Cursor program and the LLM AI behind it. Please note that AI may make mistakes! 📚✨</strong>
   <br><br>
   <em>Now supports concurrent processing, security validation, intelligent optimization and other advanced features</em>
-</div> 
+</div>

@@ -1,7 +1,7 @@
 # 🚀 Anki 词汇学习自动化工具
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![GitLab issues](https://img.shields.io/badge/GitLab-issues-blue.svg)](https://gitlab.com/jason853/anki-automation/-/issues)
 [![GitLab stars](https://img.shields.io/badge/GitLab-stars-blue.svg)](https://gitlab.com/jason853/anki-automation)
 
@@ -26,8 +26,8 @@
 - **双重发音支持：** 英式和美式IPA音标及音频
 
 ### 🤖 **AI驱动的智能生成**
-- **通用LLM支持：** 兼容OpenAI、Claude、LM Studio、Ollama等所有OpenAI API兼容服务
-- **智能模型检测：** 自动识别模型能力（如thinking标签支持）并优化提示词
+- **按提供商适配的 LLM 支持：** OpenAI 和 Anthropic 走官方 SDK，LM Studio、Ollama 和第三方兼容后端走兼容接口
+- **可选接口模式：** 支持 Responses API、Chat Completions API 和 Anthropic Messages API
 - **学习导向优化：** AI专门针对英语学习者需求调教，生成易懂内容
 - **自定义TTS生成：** 在词典音频不可用时智能创建发音音频
 
@@ -52,7 +52,8 @@
 
 ### 1. 环境要求
 
-- **Python 3.8+** 
+- **Python 3.9+**
+- **uv**（[安装指南](https://docs.astral.sh/uv/getting-started/installation/)）
 - **Anki桌面版** (安装AnkiConnect插件)
 - **柯林斯词典API密钥** (可选) 或 **AI服务** (OpenAI、Claude或本地LLM)
 
@@ -63,21 +64,18 @@
 git clone https://gitlab.com/jason853/anki-automation.git
 cd anki-automation
 
-# 运行设置脚本创建虚拟环境并安装依赖
-python setup.py
+# 安装运行依赖
+uv sync
 
-# 激活虚拟环境
-# macOS/Linux:
-source venv/bin/activate
-# Windows:
-venv\Scripts\activate
+# 如果需要跑测试或代码检查
+uv sync --extra dev --extra test
 ```
 
 ### 3. 配置
 
 ```bash
 # 启动交互式配置向导
-python app.py
+uv run python app.py
 
 # 按照设置向导操作：
 # 1. 选择选项7: 创建配置文件（如需要）
@@ -95,21 +93,61 @@ python app.py
 echo -e "sophisticated\nimplementation\noptimization" > data/New_Words.txt
 
 # 启动应用程序
-python app.py
+uv run python app.py
 
 # 选择选项1: 运行自动化脚本
 # 选择选项2: 使用并发处理（推荐用于大词汇表）
 ```
 
+### 5. 本地 Anki 验收测试
+
+当你想在每次开发开始时第一时间看到当前导入效果，可以先跑这个本地验收测试。
+
+如果还没安装测试依赖，先执行一次 `uv sync --extra test`。
+
+1. 在 `config.env` 里保持 `ANKI_LOCAL_TEST_RUN=false`。
+2. 把 `ANKI_LOCAL_TEST_PROFILE` 设成专用的 Anki 测试账户。
+3. 把 `ANKI_LOCAL_TEST_DECK` 设成可清空的专用牌组，例如 `Vocabulary_LocalSmoke`。这个测试会先删除该牌组里的旧样例，再导入 1 张新卡。
+4. 可选：设置 `ANKI_LOCAL_TEST_SOURCE_EXAMPLE`，用于验证新的“正面原句 / 背面新例句”流程。
+5. 用该测试账户启动 Anki，并确认 AnkiConnect 已启用。
+6. 运行：
+
+```bash
+ANKI_LOCAL_TEST_RUN=1 uv run pytest tests/test_local_anki_import.py -m local_anki -s
+```
+
+测试会把最新一次导入的字段和媒体快照写到 `tests/.artifacts/local_anki_import_latest.json`，方便你快速比对效果。
+
+### 6. 开发检查
+
+如果你是在维护这个项目，先安装维护者依赖：
+
+```bash
+uv sync --extra dev --extra test
+```
+
+然后用 `uv` 运行常用检查：
+
+```bash
+uv run pytest tests/ -v --cov=src/anki_vocab_automation --cov-report=xml
+uv run flake8 src/
+uv run --with safety safety check --json > safety-report.json
+uv run --with bandit bandit -r src/ -f json -o bandit-report.json
+```
+
 ## 📖 工作原理
 
 ### 输入格式
-创建一个简单的文本文件，每行一个单词：
+推荐格式：`单词<TAB>你看到这个单词时的原句`。
+
+旧的“每行只写一个单词”仍然兼容，但如果同时提供原句，生成的释义通常会更准确。
+
+示例：
 ```
-Apple
-Cat
-Yellow
-Train
+clarify	I asked the teacher to clarify the lesson.
+fundamental	The report explains the fundamental problem in the design.
+schedule | We need to change the meeting schedule again.
+implementation
 ```
 
 ### 智能处理流程
@@ -124,7 +162,8 @@ Train
 每张卡片专为英语学习者优化：
 - **单词：** 标准词典形式
 - **定义：** 使用简单词汇，避免循环，15词以内
-- **例句：** 日常情境，8-15词，简单句式，突出用法
+- **正面例句：** 优先显示用户提供的原句
+- **背面例句：** 额外显示一个新生成的例句，并且该例句会明确包含目标词
 - **发音：** 清晰的IPA音标（英式和美式）
 - **音频：** 高质量发音音频文件
 - **词性：** 简洁的语法分类
@@ -153,45 +192,142 @@ TIMEOUT_PER_WORD=60        # 单词处理超时时间
 
 ### 支持的AI服务
 
-#### 云端服务
-- **OpenAI:** GPT-4, GPT-4O, GPT-3.5-turbo
-- **Anthropic:** Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
-- **OpenAI O1系列:** O1-preview, O1-mini (支持thinking能力)
+#### 官方云端提供商
+- **OpenAI：** 使用官方 OpenAI SDK；`gpt-oss` 模型走 Responses API，其他模型走 Chat Completions + JSON Schema
+- **Anthropic：** 使用官方 Anthropic SDK，走 Messages API
 
-#### 本地LLM服务
-- **LM Studio:** 本地模型，完全OpenAI兼容
-- **Ollama:** 简单的本地模型部署
-- **Text Generation WebUI:** 高级本地模型管理
-- **任何OpenAI API兼容服务**
+#### 本地与自建后端
+- **LM Studio：** 自动把 `gpt-oss` 模型路由到 Responses API，把其他模型路由到 Chat Completions + JSON Schema
+- **Ollama：** 自动把 `gpt-oss` 模型路由到 Responses API，把其他模型路由到 Chat Completions + JSON Schema
+- **第三方 OpenAI 兼容后端：** 先支持 Chat Completions 兼容模式，并在可用时使用 JSON Schema
 
-#### 智能模型配置
-程序自动检测模型能力并优化：
+#### 推荐配置示例
 ```env
-# OpenAI
+# OpenAI 官方
+LLM_PROVIDER=openai
+LLM_API_MODE=chat
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_MODEL_NAME=gpt-4o-mini
 LLM_API_KEY=your_openai_api_key
 
-# Anthropic Claude (支持thinking)
-LLM_BASE_URL=https://api.anthropic.com/v1
+# OpenAI / LM Studio 的 gpt-oss
+LLM_PROVIDER=lmstudio
+LLM_API_MODE=responses
+LLM_BASE_URL=http://localhost:1234
+LLM_MODEL_NAME=openai/gpt-oss-20b
+LLM_API_KEY=not-needed
+LLM_GPT_OSS_REASONING_EFFORT=medium
+
+# Anthropic 官方
+LLM_PROVIDER=anthropic
+LLM_API_MODE=messages
+LLM_BASE_URL=https://api.anthropic.com
 LLM_MODEL_NAME=claude-3-5-sonnet-20241022
 LLM_API_KEY=your_anthropic_api_key
 
-# LM Studio (本地)
+# LM Studio 自动路由
+LLM_PROVIDER=lmstudio
+LLM_API_MODE=auto
 LLM_BASE_URL=http://localhost:1234
-LLM_MODEL_NAME=qwen2.5-7b-instruct
+# 留空时自动使用当前已加载模型
+LLM_MODEL_NAME=
 LLM_API_KEY=not-needed
 
-# Ollama (本地)
-LLM_BASE_URL=http://localhost:11434/v1
-LLM_MODEL_NAME=llama3.2
+# LM Studio 显式 Chat API
+LLM_PROVIDER=lmstudio
+LLM_API_MODE=chat
+LLM_BASE_URL=http://localhost:1234
+# 如果你不想使用“当前已加载模型”，也可以显式指定模型名
+LLM_MODEL_NAME=qwen/qwen3.5-9b
 LLM_API_KEY=not-needed
+
+# Ollama 自动路由
+LLM_PROVIDER=ollama
+LLM_API_MODE=auto
+LLM_BASE_URL=http://localhost:11434
+# 留空时自动使用当前正在运行的模型
+LLM_MODEL_NAME=
+LLM_API_KEY=not-needed
+
+# 第三方 OpenAI 兼容后端
+LLM_PROVIDER=openai_compat
+LLM_API_MODE=chat
+LLM_BASE_URL=https://your-provider.example.com
+LLM_MODEL_NAME=your-model-name
+LLM_API_KEY=your_provider_key
 ```
 
+对于 LM Studio 和 Ollama：
+- 当 `LLM_MODEL_NAME` 留空时，程序会自动使用当前已加载/正在运行的模型。
+- 如果本地后端里同时加载了多个模型，程序会停止并要求你显式设置 `LLM_MODEL_NAME`。
+- 如果当前没有已加载/正在运行的模型，程序会直接报错并停止生成，不再猜测默认模型。
+- 如果你手动填写了 `LLM_MODEL_NAME`，程序会优先使用该值，但现在会先检查该模型是否真实存在。
+- 当选中的模型属于 `gpt-oss` 家族时，程序会使用 Responses API，并默认 `LLM_GPT_OSS_REASONING_EFFORT=medium`。
+- 其他本地模型会使用 Chat Completions + JSON Schema，减少只输出 reasoning、不输出最终 JSON 的情况。
+
+维护说明：
+- 当前这一轮本地模型 benchmark 和 prompt 对比的阶段性结论见 [docs/llm-benchmark-phase-summary-2026-03.md](docs/llm-benchmark-phase-summary-2026-03.md)。
+
 ### TTS音频生成
-- **Google TTS:** 高质量、可靠（默认推荐）
-- **Microsoft TTS:** 自然语音合成
-- **ResponsiveVoice:** 额外语音选项
+- **OpenAI 兼容远程 TTS：** 新配置的推荐主路径，可接入本地或远程的 `/v1/audio/speech` 服务，例如 `Qwen3-TTS-MLX-Server`
+- **Google TTS / Microsoft TTS / ResponsiveVoice：** 只有在你显式开启时才会使用的 legacy URL 兼容回退
+
+OpenAI 兼容远程 TTS 配置示例：
+
+```env
+ENABLE_TTS_FALLBACK=true
+TTS_OPENAI_COMPAT_BASE_URL=http://127.0.0.1:8000
+TTS_OPENAI_COMPAT_API_KEY=not-needed
+TTS_OPENAI_COMPAT_MODEL=mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16
+TTS_OPENAI_COMPAT_RESPONSE_FORMAT=wav
+```
+
+说明：
+- 只要配置了 `TTS_OPENAI_COMPAT_BASE_URL`，程序就会把 `openai_compat` 当作主 TTS 路径
+- `TTS_SERVICE` 现在只表示“可选的 legacy URL 兼容回退”；如果你完全不想碰这些脆弱的公开 URL，就保持留空
+- 如果不设置 `TTS_OPENAI_COMPAT_MODEL`，程序会先读取服务 `/health` 返回的 `default_model`
+- 默认会按 `en-GB` / `en-US` 自动生成英式或美式英语口音指令
+- 如果你改用 `CustomVoice` 模型，需要额外设置 `TTS_OPENAI_COMPAT_VOICE`
+- `Base` 声音克隆模型需要 `ref_audio`，不适合作为当前的通用单词读音备选
+- 卡片背面会显示音频来源，明确区分 `Dictionary` 和 `TTS`
+
+如果你确实想显式启用 legacy 兼容回退，可以这样写：
+
+```env
+TTS_SERVICE=google
+```
+
+### 数据源与音频回退决策表
+
+先记住一个原则：
+- `DATA_SOURCE_STRATEGY` 决定“词卡内容从哪里来”
+- 音频回退规则只在“当前卡片缺少音频”时才生效
+
+内容来源决策：
+
+| 配置 | 词卡内容默认顺序 |
+| --- | --- |
+| `collins_only` | `Collins` |
+| `collins_first` | `Collins -> LLM` |
+| `llm_only` | `LLM` |
+| `llm_first` | `LLM -> Collins` |
+
+单词音频决策：
+
+| 条件 | 单词音频默认顺序 |
+| --- | --- |
+| 卡片已有词典音频 | `Dictionary` |
+| 卡片缺少音频，且配置了 `TTS_OPENAI_COMPAT_BASE_URL` | `openai_compat TTS -> 可选 legacy TTS_SERVICE` |
+| 卡片缺少音频，且只配置了 `TTS_SERVICE` | `legacy TTS_SERVICE` |
+| 卡片缺少音频，且两者都没配置 | `不做 TTS 回退` |
+
+常见组合示例：
+
+| 配置 | 实际常见路径 |
+| --- | --- |
+| `collins_first` + 本地 TTS | `Collins 内容/词典音频 -> 缺失时 openai_compat TTS -> 可选 legacy TTS` |
+| `llm_only` + 本地 TTS | `LLM 内容 -> openai_compat TTS -> 可选 legacy TTS` |
+| `llm_first` + 本地 TTS | `LLM 内容 -> 若 LLM 失败则 Collins -> 缺失时 openai_compat TTS -> 可选 legacy TTS` |
 
 ## 📊 输出示例
 

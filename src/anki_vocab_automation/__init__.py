@@ -7,6 +7,7 @@ from .main import VocabularyAutomation
 from .collins_api import CollinsAPI
 from .html_parser import HTMLParser
 from .anki_connect import AnkiConnect
+from .llm_client import LLMClient
 from .openai_compatible_client import OpenAICompatibleClient
 from .models import VocabularyCard
 
@@ -15,9 +16,10 @@ __author__ = "Anki Vocabulary Automation Team"
 
 __all__ = [
     "VocabularyAutomation",
-    "CollinsAPI", 
+    "CollinsAPI",
     "HTMLParser",
     "AnkiConnect",
+    "LLMClient",
     "OpenAICompatibleClient",
     "VocabularyCard",
-] 
+]
