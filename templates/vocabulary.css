@@ -1,0 +1,164 @@
+/* Theme variables */
+.card {
+  --card-text-color: #1a202c;
+  --color-word: #2b6cb0;
+  --color-context: #805ad5;
+  --color-generated-example: #319795;
+  --color-definition: #38a169;
+  --color-pronunciation: #dd6b20;
+  --color-pos: #d53f8c;
+  --divider-color: #a0aec0;
+  --surface-muted: #f7fafc;
+  --surface-subtle: rgba(255, 255, 255, 0.7);
+  --surface-accent: rgba(255, 255, 255, 0.5);
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  color: var(--card-text-color);
+}
+
+.card.nightMode {
+  --card-text-color: #edf2f7;
+  --color-word: #63b3ed;
+  --color-context: #b794f4;
+  --color-generated-example: #4fd1c5;
+  --color-definition: #68d391;
+  --color-pronunciation: #f6ad55;
+  --color-pos: #f687b3;
+  --divider-color: #4a5568;
+  --surface-muted: #2d3748;
+  --surface-subtle: rgba(255, 255, 255, 0.12);
+  --surface-accent: rgba(255, 255, 255, 0.08);
+}
+
+.vocab-card {
+  color: inherit;
+}
+
+.vocab-card > * {
+  margin: 0.5em 0;
+}
+
+.word {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: var(--color-word);
+}
+
+.label {
+  font-weight: 600;
+}
+
+.label-context {
+  color: var(--color-context);
+}
+
+.label-generated-example {
+  color: var(--color-generated-example);
+}
+
+.label-definition {
+  color: var(--color-definition);
+}
+
+.label-pronunciation {
+  color: var(--color-pronunciation);
+}
+
+.part-of-speech-back {
+  margin: 0.5em 0;
+  text-align: left;
+}
+
+.pos-tag {
+  display: inline-block;
+  background-color: var(--color-pos);
+  color: white;
+  padding: 0.2em 0.5em;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: 500;
+  margin: 0;
+  vertical-align: top;
+}
+
+.generated-example {
+  background-color: var(--surface-muted);
+  padding: 0.75em;
+  border-radius: 8px;
+}
+
+.divider {
+  border: 0;
+  height: 1px;
+  background-color: var(--divider-color);
+  margin: 0.75em 0;
+}
+
+.pronunciation-section {
+  background-color: var(--surface-muted);
+  padding: 1em;
+  border-radius: 8px;
+  margin: 1em 0;
+}
+
+.pronunciation-item {
+  margin: 0.5em 0;
+  padding: 0.5em;
+  border-left: 3px solid var(--color-pronunciation);
+  background-color: var(--surface-accent);
+  border-radius: 4px;
+}
+
+.pronunciation-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.flag-icon {
+  font-size: 1.2em;
+}
+
+.pronunciation-label {
+  font-weight: 600;
+  color: var(--color-pronunciation);
+  min-width: 80px;
+}
+
+.pronunciation-text {
+  font-family: "Courier New", monospace;
+  font-size: 1.1em;
+  color: var(--color-pronunciation);
+  font-weight: 500;
+}
+
+.audio-container {
+  margin-top: 0.5em;
+  padding: 0.25em;
+  background-color: var(--surface-subtle);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.audio-source {
+  margin-top: 0.35em;
+  font-size: 0.85em;
+  color: #4a5568;
+}
+
+.card.nightMode .audio-source {
+  color: #cbd5e0;
+}
+
+@media (max-width: 480px) {
+  .pronunciation-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25em;
+  }
+
+  .pronunciation-text {
+    font-size: 1em;
+  }
+}
