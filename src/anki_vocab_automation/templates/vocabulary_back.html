@@ -1,0 +1,51 @@
+<div class="vocab-card">
+  {{FrontSide}}
+  <hr class="divider">
+  <div class="part-of-speech-back">
+    <span class="pos-tag">{{PartOfSpeech}}</span>
+  </div>
+  <div class="definition">
+    <span class="label label-definition">Definition:</span><br>
+    {{Definition}}
+  </div>
+  {{#GeneratedExample}}
+  <div class="generated-example">
+    <span class="label label-generated-example">New Example:</span><br>
+    {{GeneratedExample}}
+  </div>
+  {{/GeneratedExample}}
+
+  <div class="pronunciation-section">
+    <span class="label label-pronunciation">Pronunciation:</span><br>
+
+    <div class="pronunciation-item">
+      <div class="pronunciation-header">
+        <span class="flag-icon">🇬🇧</span>
+        <span class="pronunciation-label">British:</span>
+        <span class="pronunciation-text">{{BritishPronunciation}}</span>
+      </div>
+      {{#BritishAudioFilename}}
+      <div class="audio-container">[sound:{{BritishAudioFilename}}]</div>
+      {{/BritishAudioFilename}}
+      {{#BritishAudioSource}}
+      <div class="audio-source">Source: {{BritishAudioSource}}</div>
+      {{/BritishAudioSource}}
+    </div>
+
+    {{#AmericanPronunciation}}
+    <div class="pronunciation-item">
+      <div class="pronunciation-header">
+        <span class="flag-icon">🇺🇸</span>
+        <span class="pronunciation-label">American:</span>
+        <span class="pronunciation-text">{{AmericanPronunciation}}</span>
+      </div>
+      {{#AmericanAudioFilename}}
+      <div class="audio-container">[sound:{{AmericanAudioFilename}}]</div>
+      {{/AmericanAudioFilename}}
+      {{#AmericanAudioSource}}
+      <div class="audio-source">Source: {{AmericanAudioSource}}</div>
+      {{/AmericanAudioSource}}
+    </div>
+    {{/AmericanPronunciation}}
+  </div>
+</div>

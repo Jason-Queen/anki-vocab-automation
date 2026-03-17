@@ -1,8 +1,14 @@
 from pathlib import Path
 
-from anki_vocab_automation.anki_connect import AnkiConnect, MODEL_TEMPLATE_ASSET_PATHS
+from anki_vocab_automation.anki_connect import (
+    AnkiConnect,
+    MODEL_TEMPLATE_ASSET_PATHS,
+    load_vocabulary_model_assets,
+)
 from anki_vocab_automation.input_validator import parse_vocabulary_input
 from anki_vocab_automation.models import VocabularyCard
+
+REPOSITORY_TEMPLATE_DIR = Path(__file__).resolve().parents[1] / "templates"
 
 
 def test_parse_vocabulary_input_supports_word_and_example() -> None:
@@ -34,13 +40,28 @@ def test_vocabulary_card_to_dict_exposes_generated_example() -> None:
     assert payload["AudioSource"] == "mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16"
 
 
+def test_packaged_template_assets_match_repository_templates() -> None:
+    packaged_assets = load_vocabulary_model_assets()
+
+    assert MODEL_TEMPLATE_ASSET_PATHS["front"].is_file()
+    assert MODEL_TEMPLATE_ASSET_PATHS["back"].is_file()
+    assert MODEL_TEMPLATE_ASSET_PATHS["css"].is_file()
+    assert packaged_assets["front"] == (REPOSITORY_TEMPLATE_DIR / "vocabulary_front.html").read_text(
+        encoding="utf-8"
+    ).strip()
+    assert packaged_assets["back"] == (REPOSITORY_TEMPLATE_DIR / "vocabulary_back.html").read_text(
+        encoding="utf-8"
+    ).strip()
+    assert packaged_assets["css"] == (REPOSITORY_TEMPLATE_DIR / "vocabulary.css").read_text(encoding="utf-8").strip()
+
+
 def test_anki_template_uses_example_on_front_and_generated_example_on_back() -> None:
     anki = AnkiConnect()
 
     fields = anki._get_required_model_fields()
     templates = anki._build_model_templates()
-    expected_front = Path(MODEL_TEMPLATE_ASSET_PATHS["front"]).read_text(encoding="utf-8").strip()
-    expected_back = Path(MODEL_TEMPLATE_ASSET_PATHS["back"]).read_text(encoding="utf-8").strip()
+    expected_front = (REPOSITORY_TEMPLATE_DIR / "vocabulary_front.html").read_text(encoding="utf-8").strip()
+    expected_back = (REPOSITORY_TEMPLATE_DIR / "vocabulary_back.html").read_text(encoding="utf-8").strip()
 
     assert "GeneratedExample" in fields
     assert "BritishAudioSource" in fields
@@ -60,7 +81,7 @@ def test_anki_template_css_supports_anki_night_mode() -> None:
     anki = AnkiConnect()
 
     css = anki._build_model_css()
-    expected_css = Path(MODEL_TEMPLATE_ASSET_PATHS["css"]).read_text(encoding="utf-8").strip()
+    expected_css = (REPOSITORY_TEMPLATE_DIR / "vocabulary.css").read_text(encoding="utf-8").strip()
 
     assert css == expected_css
     assert ".card.nightMode" in css

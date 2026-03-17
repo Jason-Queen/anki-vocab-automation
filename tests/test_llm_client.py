@@ -484,6 +484,47 @@ def test_llm_client_uses_loaded_lmstudio_model_when_model_name_is_blank(monkeypa
     assert captured["request"]["response_format"]["type"] == "json_schema"
 
 
+@pytest.mark.parametrize(
+    ("provider", "base_url"),
+    [
+        ("lmstudio", "http://localhost:1234"),
+        ("ollama", "http://localhost:11434"),
+    ],
+)
+def test_llm_client_skips_loaded_model_discovery_for_explicit_local_model(
+    monkeypatch, provider: str, base_url: str
+) -> None:
+    native_endpoint_calls = []
+
+    def fake_get(*args, **kwargs):
+        native_endpoint_calls.append(args[0])
+        raise AssertionError("explicit local model should not trigger provider-native loaded-model discovery")
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            self.responses = SimpleNamespace(create=lambda **kwargs: SimpleNamespace(output_text=JSON_RESPONSE))
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=lambda **kwargs: None))
+            self.models = SimpleNamespace(list=lambda: [SimpleNamespace(id="openai/gpt-oss-20b")])
+
+    monkeypatch.setattr("anki_vocab_automation.llm_client.requests.get", fake_get)
+    monkeypatch.setattr("anki_vocab_automation.llm_client.OpenAI", FakeOpenAI)
+
+    client = LLMClient(
+        provider=provider,
+        api_mode="responses",
+        base_url=base_url,
+        api_key="not-needed",
+        model_name="openai/gpt-oss-20b",
+        enable_tts=False,
+    )
+
+    card = client.generate_vocabulary_card("clarify")
+
+    assert card is not None
+    assert card.word == "clarify"
+    assert native_endpoint_calls == []
+
+
 def test_llm_client_rejects_generation_when_no_local_model_is_loaded(monkeypatch) -> None:
     class FakeResponse:
         def raise_for_status(self):

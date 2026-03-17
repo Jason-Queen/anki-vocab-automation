@@ -540,6 +540,21 @@ class LLMClient:
 
         if self.runtime.provider in ("lmstudio", "ollama"):
             provider_label = LOCAL_RUNTIME_DISPLAY_NAMES.get(self.runtime.provider, self.runtime.provider)
+            if configured_model_name:
+                available_models = self.get_available_models()
+                if not available_models:
+                    raise ValueError("无法验证 {0} 的可用模型列表，请确认服务可用后重试。".format(provider_label))
+                if configured_model_name not in available_models:
+                    raise ValueError(
+                        "配置的 LLM_MODEL_NAME 不存在: {0}。{1} 当前可用模型: {2}".format(
+                            configured_model_name,
+                            provider_label,
+                            ", ".join(available_models),
+                        )
+                    )
+                self._resolved_generation_model_name = configured_model_name
+                return self._resolved_generation_model_name
+
             try:
                 loaded_models = list_loaded_models_for_backend(
                     provider=self.runtime.provider,
@@ -557,21 +572,6 @@ class LLMClient:
                     "{0} 当前没有已加载模型。请先在 {0} 中加载一个模型，"
                     "或在确认已加载后再继续生成。".format(provider_label)
                 )
-
-            if configured_model_name:
-                available_models = self.get_available_models()
-                if not available_models:
-                    raise ValueError("无法验证 {0} 的可用模型列表，请确认服务可用后重试。".format(provider_label))
-                if configured_model_name not in available_models:
-                    raise ValueError(
-                        "配置的 LLM_MODEL_NAME 不存在: {0}。{1} 当前可用模型: {2}".format(
-                            configured_model_name,
-                            provider_label,
-                            ", ".join(available_models),
-                        )
-                    )
-                self._resolved_generation_model_name = configured_model_name
-                return self._resolved_generation_model_name
 
             unique_loaded_models = list(dict.fromkeys(loaded_models))
             if len(unique_loaded_models) > 1:

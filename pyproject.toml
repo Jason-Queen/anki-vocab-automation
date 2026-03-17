@@ -70,7 +70,7 @@ anki-vocab = "anki_vocab_automation.main:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-anki_vocab_automation = ["templates/*.html"]
+anki_vocab_automation = ["templates/*.html", "templates/*.css"]
 
 # Black code formatting
 [tool.black]

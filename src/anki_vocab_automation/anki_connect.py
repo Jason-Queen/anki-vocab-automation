@@ -7,6 +7,7 @@ import requests
 import logging
 import base64
 from functools import lru_cache
+from importlib import resources
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -15,21 +16,24 @@ from .config import ANKI_CONNECT_HOST, ANKI_CONNECT_PORT, DECK_NAME, REQUEST_TIM
 
 logger = logging.getLogger(__name__)
 
-TEMPLATE_ASSET_DIR = Path(__file__).resolve().parents[2] / "templates"
+MODEL_TEMPLATE_ASSET_FILENAMES = {
+    "front": "vocabulary_front.html",
+    "back": "vocabulary_back.html",
+    "css": "vocabulary.css",
+}
 MODEL_TEMPLATE_ASSET_PATHS = {
-    "front": TEMPLATE_ASSET_DIR / "vocabulary_front.html",
-    "back": TEMPLATE_ASSET_DIR / "vocabulary_back.html",
-    "css": TEMPLATE_ASSET_DIR / "vocabulary.css",
+    asset_name: resources.files("anki_vocab_automation").joinpath("templates", asset_filename)
+    for asset_name, asset_filename in MODEL_TEMPLATE_ASSET_FILENAMES.items()
 }
 
 
 @lru_cache(maxsize=1)
 def load_vocabulary_model_assets() -> Dict[str, str]:
-    """Load the canonical vocabulary model assets from the repository templates directory."""
+    """Load the canonical vocabulary model assets from packaged resources."""
     assets = {}
 
     for asset_name, asset_path in MODEL_TEMPLATE_ASSET_PATHS.items():
-        if not asset_path.exists():
+        if not asset_path.is_file():
             raise FileNotFoundError("缺少模板资源文件: {0}".format(asset_path))
         assets[asset_name] = asset_path.read_text(encoding="utf-8").strip()
 

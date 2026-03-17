@@ -38,16 +38,20 @@ def test_llm_client_retries_when_generated_example_omits_target_word(monkeypatch
     requests = []
     responses = [INVALID_INSTRUCTION_RESPONSE, VALID_INSTRUCTION_RESPONSE]
 
+    def fake_get(*args, **kwargs):
+        raise AssertionError("explicit local model should not probe provider-native loaded-model endpoints")
+
     class FakeOpenAI:
         def __init__(self, **kwargs):
             self.responses = SimpleNamespace(create=self._create_response)
             self.chat = SimpleNamespace(completions=SimpleNamespace(create=lambda **kwargs: None))
-            self.models = SimpleNamespace(list=lambda: [])
+            self.models = SimpleNamespace(list=lambda: [SimpleNamespace(id="openai/gpt-oss-20b")])
 
         def _create_response(self, **kwargs):
             requests.append(kwargs)
             return SimpleNamespace(output_text=responses.pop(0))
 
+    monkeypatch.setattr("anki_vocab_automation.llm_client.requests.get", fake_get)
     monkeypatch.setattr("anki_vocab_automation.llm_client.OpenAI", FakeOpenAI)
 
     client = LLMClient(
@@ -72,14 +76,18 @@ def test_llm_client_retries_when_generated_example_omits_target_word(monkeypatch
 
 
 def test_llm_client_rejects_generated_example_without_target_word(monkeypatch) -> None:
+    def fake_get(*args, **kwargs):
+        raise AssertionError("explicit local model should not probe provider-native loaded-model endpoints")
+
     class FakeOpenAI:
         def __init__(self, **kwargs):
             self.responses = SimpleNamespace(
                 create=lambda **kwargs: SimpleNamespace(output_text=INVALID_INSTRUCTION_RESPONSE)
             )
             self.chat = SimpleNamespace(completions=SimpleNamespace(create=lambda **kwargs: None))
-            self.models = SimpleNamespace(list=lambda: [])
+            self.models = SimpleNamespace(list=lambda: [SimpleNamespace(id="openai/gpt-oss-20b")])
 
+    monkeypatch.setattr("anki_vocab_automation.llm_client.requests.get", fake_get)
     monkeypatch.setattr("anki_vocab_automation.llm_client.OpenAI", FakeOpenAI)
 
     client = LLMClient(
