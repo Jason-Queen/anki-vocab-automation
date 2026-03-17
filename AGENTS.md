@@ -369,6 +369,7 @@ A task is done only when:
 - relevant checks/tests were run, or the reason they could not run is stated clearly,
 - docs/config/examples were updated if behavior changed,
 - security/privacy impact was considered,
+- before pushing packaging-related changes or a release, `uv build` does not emit known setuptools/`pyproject.toml` metadata deprecation warnings (for example license/classifier warnings), or that follow-up is made explicit if it is truly out of scope,
 - learner-facing changes include at least one before/after example in task notes or PR text,
 - known follow-ups are explicit rather than hidden.
 
