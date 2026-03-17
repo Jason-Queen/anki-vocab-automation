@@ -137,6 +137,7 @@ debug_*.py
 
 # Anki-related files
 anki_vocab_automation.log
+tests/.artifacts/
 
 # macOS
 .DS_Store

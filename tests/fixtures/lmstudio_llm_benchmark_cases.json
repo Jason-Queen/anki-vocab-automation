@@ -1,0 +1,139 @@
+[
+  {
+    "case_id": "clarify_verb",
+    "word": "clarify",
+    "source_example": "Please clarify the final step for me.",
+    "expected_lemmas": ["clarify"],
+    "expected_parts_of_speech": ["verb"],
+    "sense_keywords": ["clear", "understand", "explain"],
+    "sense_min_hits": 1,
+    "forbidden_keywords": ["liquid", "transparent"],
+    "notes": "Basic transitive verb; tests plain definition quality."
+  },
+  {
+    "case_id": "instruction_noun",
+    "word": "instruction",
+    "source_example": "Please follow the safety instruction on the label.",
+    "expected_lemmas": ["instruction"],
+    "expected_parts_of_speech": ["noun"],
+    "sense_keywords": ["direction", "order", "step", "what to do"],
+    "sense_min_hits": 1,
+    "forbidden_keywords": ["teach a class", "computer instruction set"],
+    "notes": "Concrete noun sense, not teaching as a general activity."
+  },
+  {
+    "case_id": "actually_adverb",
+    "word": "actually",
+    "source_example": "I thought the room was small, but it was actually quite spacious.",
+    "expected_lemmas": ["actually"],
+    "expected_parts_of_speech": ["adverb"],
+    "sense_keywords": ["in fact", "really", "truth", "reality", "true"],
+    "sense_min_hits": 1,
+    "forbidden_keywords": ["currently", "actively"],
+    "notes": "Adverbial correction/discourse marker sense."
+  },
+  {
+    "case_id": "running_verb",
+    "word": "running",
+    "source_example": "She is running every morning before work.",
+    "expected_lemmas": ["run"],
+    "expected_parts_of_speech": ["verb"],
+    "sense_keywords": ["move on foot", "move quickly on foot", "jog", "go quickly on foot"],
+    "sense_min_hits": 1,
+    "forbidden_keywords": ["operate", "manage a company"],
+    "notes": "Inflected verb; should lemmatize to run in an action sentence."
+  },
+  {
+    "case_id": "present_adjective",
+    "word": "present",
+    "source_example": "All staff members were present at the meeting.",
+    "expected_lemmas": ["present"],
+    "expected_parts_of_speech": ["adjective"],
+    "sense_keywords": ["being there", "attendance", "in a place", "not absent", "there at a place"],
+    "sense_min_hits": 1,
+    "forbidden_keywords": ["gift", "introduce", "show"],
+    "notes": "Ambiguous surface form; tests adjective sense selection."
+  },
+  {
+    "case_id": "conduct_noun",
+    "word": "conduct",
+    "source_example": "His calm conduct impressed the committee.",
+    "expected_lemmas": ["conduct"],
+    "expected_parts_of_speech": ["noun"],
+    "sense_keywords": ["behavior", "manner", "way of acting", "behave", "behaves", "way a person behaves"],
+    "sense_min_hits": 1,
+    "forbidden_keywords": ["lead", "manage", "electricity"],
+    "notes": "Ambiguous noun vs verb."
+  },
+  {
+    "case_id": "defining_adjective",
+    "word": "defining",
+    "source_example": "Code execution is the defining capability that makes agentic engineering possible.",
+    "expected_lemmas": ["defining"],
+    "expected_parts_of_speech": ["adjective"],
+    "sense_keywords": [
+      "most important",
+      "main",
+      "essential",
+      "characteristic",
+      "feature",
+      "trait",
+      "quality",
+      "factor",
+      "identify",
+      "nature",
+      "distinguishing",
+      "what it is",
+      "what something is"
+    ],
+    "sense_min_hits": 2,
+    "forbidden_keywords": [
+      "state the meaning",
+      "explain the exact meaning",
+      "meaning of a word",
+      "give the meaning of",
+      "explain what a word means"
+    ],
+    "notes": "Crucial regression case: should stay adjective and allow correct wording like essential nature or key feature."
+  },
+  {
+    "case_id": "agentic_adjective",
+    "word": "agentic",
+    "source_example": "Code execution is the defining capability that makes agentic engineering possible.",
+    "expected_lemmas": ["agentic"],
+    "expected_parts_of_speech": ["adjective"],
+    "sense_keywords": [
+      "independent",
+      "independently",
+      "initiative",
+      "autonomous",
+      "self-directed",
+      "make decisions"
+    ],
+    "sense_min_hits": 1,
+    "forbidden_keywords": ["agent", "chemical agent"],
+    "notes": "Tests newer adjective vocabulary."
+  },
+  {
+    "case_id": "running_adjective",
+    "word": "running",
+    "source_example": "The cabin has running water all year.",
+    "expected_lemmas": ["running"],
+    "expected_parts_of_speech": ["adjective"],
+    "sense_keywords": ["flowing", "water", "continuously", "through pipes"],
+    "sense_min_hits": 1,
+    "forbidden_keywords": ["move fast", "jog", "manage"],
+    "notes": "Surface form matches the verb, but the sentence uses the adjective sense."
+  },
+  {
+    "case_id": "working_adjective",
+    "word": "working",
+    "source_example": "We finally have a working prototype for the demo.",
+    "expected_lemmas": ["working"],
+    "expected_parts_of_speech": ["adjective"],
+    "sense_keywords": ["functioning", "operating properly", "operating correctly", "able to function", "usable"],
+    "sense_min_hits": 1,
+    "forbidden_keywords": ["having a job", "employed", "laboring"],
+    "notes": "Another adjective/verb ambiguity case; should not collapse back to the verb."
+  }
+]
