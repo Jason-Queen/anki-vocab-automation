@@ -139,6 +139,21 @@ debug_*.py
 anki_vocab_automation.log
 tests/.artifacts/
 
+# Local reference assets that must stay out of VCS
+/reference/
+_codex_archive/
+
+# Agent workspace-only metadata files
+AGENTS.md
+CLAUDE.md
+Claude.md
+GEMINI.md
+CODEX.md
+Codex.md
+CURSOR.md
+cursor.md
+.cursorrules
+
 # macOS
 .DS_Store
 
