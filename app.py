@@ -406,7 +406,7 @@ def configure_llm_service():
                 available_models = dynamic_models
                 print(f"✅ 找到 {len(available_models)} 个可用模型")
             else:
-                print(f"⚠️  无法获取模型列表，将使用默认选项")
+                print("⚠️  无法获取模型列表，将使用默认选项")
                 available_models = []
 
             if loaded_models:
@@ -416,7 +416,7 @@ def configure_llm_service():
 
         # 显示可用模型
         if available_models:
-            print(f"\n可用模型:")
+            print("\n可用模型:")
             for i, model in enumerate(available_models, 1):
                 marker = " (已加载)" if model in loaded_models else ""
                 print(f"{i}. {model}{marker}")
@@ -452,7 +452,7 @@ def configure_llm_service():
                 model_name = service["default_model"]
         else:
             # 没有可用模型，直接让用户输入
-            print(f"\n📝 请输入模型名称:")
+            print("\n📝 请输入模型名称:")
             if provider in ["lmstudio", "ollama"]:
                 model_name = input("模型名称 (回车=自动使用当前已加载模型): ").strip()
             else:
@@ -465,7 +465,7 @@ def configure_llm_service():
         return
 
     # 确认配置
-    print(f"\n📋 配置摘要:")
+    print("\n📋 配置摘要:")
     service_name = services[choice]["name"] if choice in services else "自定义"
     print(f"服务: {service_name}")
     print(f"Provider: {provider}")
@@ -738,38 +738,45 @@ def main():
             print("   - 选择'1': 单线程处理（适合小词汇表，<50词）")
             print("   - 选择'2': 并发处理（推荐用于大词汇表，50+词）")
             print()
-            print("3. 数据源策略说明：")
+            print("3. Agent/Codex 直接使用：")
+            print("   - 可直接运行: uv run anki-vocab --entry 'clarify｜I asked the teacher to clarify the lesson.'")
+            print("   - 可批量粘贴: printf 'clarify｜...\\nschedule｜...\\n' | uv run anki-vocab --stdin --concurrent")
+            print("   - 支持分隔符: TAB、全角｜、半角|")
+            print("   - 直连模式固定只走 LLM，不使用 Collins API")
+            print()
+            print("4. 数据源策略说明：")
             print("   - collins_only: 仅使用Collins API")
             print("   - llm_only: 仅使用LLM")
             print("   - collins_first: 优先Collins API，失败时使用LLM")
             print("   - llm_first: 优先LLM，失败时使用Collins API")
             print()
-            print("4. 并发处理配置：")
+            print("5. 并发处理配置：")
             print("   - 最大线程数: 建议2-4，取决于网络和API限制")
             print("   - 速率限制: 每秒请求数，避免触发API限制")
             print("   - 小词汇表: 线程数=2, 速率=1.0/s")
             print("   - 大词汇表: 线程数=4, 速率=2.0/s")
             print()
-            print("5. TTS音频生成：")
+            print("6. TTS音频生成：")
             print("   - 当使用LLM生成卡片时，自动使用TTS生成发音音频")
             print("   - 推荐主路径是 OpenAI 兼容远程TTS 服务")
             print("   - Google / Microsoft / ResponsiveVoice 仅作为可选 legacy URL 兼容回退")
             print("   - 配置 TTS_OPENAI_COMPAT_BASE_URL 后会优先使用本地/远程 openai_compat TTS")
             print("   - 在config.env中配置ENABLE_TTS_FALLBACK=true启用")
             print()
-            print("6. 环境变量配置：")
+            print("7. 环境变量配置：")
             print("   - LLM_PROVIDER: 后端类型 (openai/anthropic/lmstudio/ollama/openai_compat)")
             print("   - LLM_API_MODE: 接口模式 (responses/chat/messages)")
             print("   - COLLINS_API_KEY: Collins API密钥")
             print("   - LLM_BASE_URL: LLM服务地址")
             print("   - LLM_API_KEY: LLM API密钥")
             print("   - LLM_MODEL_NAME: LLM模型名称")
+            print("   - LLM_PROMPT_VERSION: 提示词版本 (revised/baseline)")
             print("   - DATA_SOURCE_STRATEGY: 数据源策略")
             print("   - ENABLE_TTS_FALLBACK: 是否启用TTS音频")
             print("   - TTS_OPENAI_COMPAT_BASE_URL: 远程TTS服务地址（推荐）")
             print("   - TTS_SERVICE: 可选 legacy URL TTS 回退（google/microsoft/responsivevoice）")
             print()
-            print("7. 支持的LLM服务：")
+            print("8. 支持的LLM服务：")
             print("   - OpenAI: https://api.openai.com/v1")
             print("   - Anthropic Claude: https://api.anthropic.com")
             print("   - LM Studio: http://localhost:1234 (自动规范到 /v1)")
@@ -777,10 +784,10 @@ def main():
             print("   - 其他第三方兼容后端: 先按 OpenAI Chat 兼容模式配置")
             print("   💡 建议：使用'5'选项进行图形化配置")
             print()
-            print("8. 常见问题：")
+            print("9. 常见问题：")
             print("   - 确保Anki正在运行并安装了AnkiConnect插件")
             print("   - 确保data/New_Words.txt中有要处理的输入")
-            print("   - 推荐格式: 单词<TAB>原句；旧的纯单词格式仍可用")
+            print("   - 推荐格式: 单词<TAB>原句、单词｜原句 或 单词|原句；旧的纯单词格式仍可用")
             print("   - 使用'9'选项自动检查和创建Anki环境")
             print("   - 检查网络连接和API密钥")
             print("   - 并发处理出错时可降低线程数和速率限制")

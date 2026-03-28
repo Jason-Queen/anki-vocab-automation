@@ -7,7 +7,9 @@ import os
 from pathlib import Path
 
 from .llm_client import (
+    DEFAULT_PROMPT_VERSION,
     DEFAULT_GPT_OSS_REASONING_EFFORT,
+    SUPPORTED_PROMPT_VERSIONS,
     SUPPORTED_GPT_OSS_REASONING_EFFORTS,
     SUPPORTED_LLM_API_MODES,
     SUPPORTED_LLM_PROVIDERS,
@@ -131,6 +133,7 @@ LLM_API_KEY = os.getenv("LLM_API_KEY", "not-needed")
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "").strip()
 LLM_TIMEOUT = get_int_env("LLM_TIMEOUT", 60)
 ENABLE_LLM_FALLBACK = get_bool_env("ENABLE_LLM_FALLBACK", True)
+LLM_PROMPT_VERSION = os.getenv("LLM_PROMPT_VERSION", DEFAULT_PROMPT_VERSION).strip().lower() or DEFAULT_PROMPT_VERSION
 
 # TTS音频生成配置
 ENABLE_TTS_FALLBACK = get_bool_env("ENABLE_TTS_FALLBACK", True)
@@ -236,6 +239,9 @@ def validate_config():
             f"{LLM_GPT_OSS_REASONING_EFFORT}，有效选项: {SUPPORTED_GPT_OSS_REASONING_EFFORTS}"
         )
 
+    if LLM_PROMPT_VERSION not in SUPPORTED_PROMPT_VERSIONS:
+        errors.append(f"无效的LLM_PROMPT_VERSION: {LLM_PROMPT_VERSION}，有效选项: {SUPPORTED_PROMPT_VERSIONS}")
+
     try:
         llm_runtime = resolve_llm_runtime_config(LLM_PROVIDER, LLM_API_MODE, LLM_BASE_URL)
     except ValueError as exc:
@@ -288,6 +294,7 @@ def display_config():
     else:
         print("LLM Model: (未设置)")
     print(f"GPT-OSS Reasoning Effort: {LLM_GPT_OSS_REASONING_EFFORT}")
+    print(f"LLM Prompt Version: {LLM_PROMPT_VERSION}")
     print(f"数据源策略: {DATA_SOURCE_STRATEGY}")
     print(f"启用LLM备选: {ENABLE_LLM_FALLBACK}")
     if TTS_OPENAI_COMPAT_BASE_URL:

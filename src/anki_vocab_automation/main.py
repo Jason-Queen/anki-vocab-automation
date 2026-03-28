@@ -3,16 +3,18 @@
 Main automation workflow for Anki Vocabulary Automation
 """
 
+import argparse
 import time
 import logging
-from typing import List
+import sys
 from pathlib import Path
+from typing import List, Optional, Sequence
 
 from .collins_api import CollinsAPI
 from .html_parser import HTMLParser
 from .anki_connect import AnkiConnect
 from .llm_client import LLMClient
-from .input_validator import parse_vocabulary_input
+from .input_validator import parse_vocabulary_lines
 from .models import VocabularyInput
 from .audio_manager import AudioManager
 from .concurrent_processor import (
@@ -35,6 +37,7 @@ from .config import (
     LLM_CUSTOM_TEMPERATURE,
     LLM_CUSTOM_MAX_TOKENS,
     LLM_GPT_OSS_REASONING_EFFORT,
+    LLM_PROMPT_VERSION,
     ENABLE_LLM_FALLBACK,
     DATA_SOURCE_STRATEGY,
     ENABLE_TTS_FALLBACK,
@@ -62,16 +65,22 @@ logger = logging.getLogger(__name__)
 class VocabularyAutomation:
     """主要的自动化流程类"""
 
-    def __init__(self, collins_api_key: str = COLLINS_API_KEY):
+    def __init__(
+        self,
+        collins_api_key: str = COLLINS_API_KEY,
+        data_source_strategy: Optional[str] = None,
+    ):
         """
         初始化自动化流程
 
         Args:
             collins_api_key: Collins API密钥
+            data_source_strategy: 可选的运行时数据源策略覆盖
         """
         self.collins_api = CollinsAPI(collins_api_key)
         self.html_parser = HTMLParser()
         self.anki_connect = AnkiConnect()
+        self.data_source_strategy = (data_source_strategy or DATA_SOURCE_STRATEGY).strip().lower()
 
         # 初始化OpenAI兼容客户端
         self.llm_client = self._initialize_llm_client()
@@ -119,6 +128,7 @@ class VocabularyAutomation:
             temperature=LLM_CUSTOM_TEMPERATURE,
             max_output_tokens=LLM_CUSTOM_MAX_TOKENS,
             gpt_oss_reasoning_effort=LLM_GPT_OSS_REASONING_EFFORT,
+            prompt_version=LLM_PROMPT_VERSION,
         )
 
         logger.info(
@@ -130,7 +140,7 @@ class VocabularyAutomation:
         )
         return client
 
-    def process_word_list(self, word_list: List[VocabularyInput]) -> None:
+    def process_word_list(self, word_list: List[VocabularyInput]) -> bool:
         """
         处理单词列表
 
@@ -139,16 +149,16 @@ class VocabularyAutomation:
         """
         if not self.anki_connect.check_connection():
             logger.error("无法连接到Anki Connect")
-            return
+            return False
 
         if not self.anki_connect.ensure_deck_exists():
             logger.error("无法创建或访问卡牌组")
-            return
+            return False
 
         # 确保支持双重发音的模板存在
         if not self.anki_connect.ensure_model_exists():
             logger.error("无法创建或访问词汇模板")
-            return
+            return False
 
         self.stats["total"] = len(word_list)
         logger.info(f"开始处理 {len(word_list)} 个单词")
@@ -164,10 +174,11 @@ class VocabularyAutomation:
                 time.sleep(REQUEST_DELAY)
 
         self._print_stats()
+        return True
 
     def process_word_list_concurrent(
         self, word_list: List[VocabularyInput], max_workers: int = 4, rate_limit: float = 2.0
-    ) -> None:
+    ) -> bool:
         """
         并发处理单词列表（实时添加到Anki版本）
 
@@ -178,16 +189,16 @@ class VocabularyAutomation:
         """
         if not self.anki_connect.check_connection():
             logger.error("无法连接到Anki Connect")
-            return
+            return False
 
         if not self.anki_connect.ensure_deck_exists():
             logger.error("无法创建或访问卡牌组")
-            return
+            return False
 
         # 确保支持双重发音的模板存在
         if not self.anki_connect.ensure_model_exists():
             logger.error("无法创建或访问词汇模板")
-            return
+            return False
 
         self.stats["total"] = len(word_list)
         logger.info(f"开始并发处理 {len(word_list)} 个单词 (并发度: {max_workers}, 速率: {rate_limit}/s)")
@@ -267,9 +278,11 @@ class VocabularyAutomation:
             import traceback
 
             logger.error(f"异常详情: {traceback.format_exc()}")
+            return False
 
         logger.info("开始打印最终统计信息...")
         self._print_stats()
+        return True
 
     def _process_single_word(self, entry: VocabularyInput) -> bool:
         """
@@ -329,24 +342,24 @@ class VocabularyAutomation:
         """
         card = None
 
-        if DATA_SOURCE_STRATEGY == "collins_only":
+        if self.data_source_strategy == "collins_only":
             card = self._get_card_from_collins(entry)
-        elif DATA_SOURCE_STRATEGY == "llm_only":
+        elif self.data_source_strategy == "llm_only":
             card = self._get_card_from_llm(entry)
-        elif DATA_SOURCE_STRATEGY == "collins_first":
+        elif self.data_source_strategy == "collins_first":
             # 优先使用Collins API
             card = self._get_card_from_collins(entry)
             if not card and ENABLE_LLM_FALLBACK:
                 logger.info(f"Collins API失败或无密钥，尝试使用LLM: {entry.word}")
                 card = self._get_card_from_llm(entry)
-        elif DATA_SOURCE_STRATEGY == "llm_first":
+        elif self.data_source_strategy == "llm_first":
             # 优先使用LLM
             card = self._get_card_from_llm(entry)
             if not card:
                 logger.info(f"LLM失败，尝试使用Collins API: {entry.word}")
                 card = self._get_card_from_collins(entry)
         else:
-            logger.error(f"未知的数据源策略: {DATA_SOURCE_STRATEGY}")
+            logger.error(f"未知的数据源策略: {self.data_source_strategy}")
             return None
 
         if card:
@@ -611,6 +624,69 @@ class VocabularyAutomation:
         )
 
 
+def build_cli_parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for non-interactive and legacy file-driven runs."""
+    parser = argparse.ArgumentParser(
+        description="Create Anki vocabulary cards from a file, inline entries, or stdin.",
+    )
+    parser.add_argument(
+        "-e",
+        "--entry",
+        action="append",
+        default=[],
+        help="Inline entry such as 'clarify｜I asked the teacher to clarify the lesson.'. Can be repeated.",
+    )
+    parser.add_argument(
+        "--stdin",
+        action="store_true",
+        help=(
+            "Read entries from standard input, one per line. "
+            "Supports word<TAB>sentence, word｜sentence, and word|sentence."
+        ),
+    )
+    parser.add_argument(
+        "--concurrent",
+        action="store_true",
+        help="Use concurrent processing for the supplied entries.",
+    )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=4,
+        help="Maximum worker threads when --concurrent is enabled (default: 4).",
+    )
+    parser.add_argument(
+        "--rate-limit",
+        type=float,
+        default=2.0,
+        help="Per-second rate limit when --concurrent is enabled (default: 2.0).",
+    )
+    return parser
+
+
+def _log_invalid_input_lines(errors: Sequence[str]) -> None:
+    for error in errors:
+        logger.warning("跳过无效输入行: %s", error)
+    if errors:
+        logger.warning("共有 %s 条输入被跳过", len(errors))
+
+
+def parse_inline_entries(entry_values: Sequence[str], stdin_text: str = "") -> List[VocabularyInput]:
+    """Parse inline arguments and piped input into vocabulary requests."""
+    raw_lines: List[str] = []
+
+    for entry_value in entry_values:
+        raw_lines.extend(entry_value.splitlines())
+
+    if stdin_text:
+        raw_lines.extend(stdin_text.splitlines())
+
+    entries, errors = parse_vocabulary_lines(raw_lines)
+    _log_invalid_input_lines(errors)
+    logger.info("成功读取 %s 条直接输入", len(entries))
+    return entries
+
+
 def read_word_list(file_path: Path = WORD_LIST_FILE) -> List[VocabularyInput]:
     """
     读取单词列表文件
@@ -623,19 +699,9 @@ def read_word_list(file_path: Path = WORD_LIST_FILE) -> List[VocabularyInput]:
     """
     try:
         with open(file_path, "r", encoding="utf-8") as f:
-            entries = []
-            invalid_lines = 0
-            for raw_line in f:
-                parsed, error = parse_vocabulary_input(raw_line)
-                if parsed is None:
-                    if raw_line.strip():
-                        invalid_lines += 1
-                        logger.warning(f"跳过无效输入行: {raw_line.strip()} ({error})")
-                    continue
-                entries.append(parsed)
+            entries, errors = parse_vocabulary_lines(f)
         logger.info(f"成功读取 {len(entries)} 条输入")
-        if invalid_lines:
-            logger.warning(f"共有 {invalid_lines} 条输入被跳过")
+        _log_invalid_input_lines(errors)
         return entries
     except FileNotFoundError:
         logger.error(f"文件未找到: {file_path}")
@@ -645,34 +711,90 @@ def read_word_list(file_path: Path = WORD_LIST_FILE) -> List[VocabularyInput]:
         return []
 
 
-def main():
-    """主函数"""
-    logger.info("启动Anki词汇自动化程序")
-    logger.info(f"数据源策略: {DATA_SOURCE_STRATEGY}")
-
-    # 根据数据源策略配置Collins API密钥
+def _resolve_collins_api_key(active_data_source_strategy: str, allow_interactive_prompt: bool) -> Optional[str]:
+    """Resolve the Collins API key for the current run mode."""
     collins_api_key = COLLINS_API_KEY
-    if DATA_SOURCE_STRATEGY in ["collins_only", "collins_first"]:
-        if not collins_api_key:
+
+    if active_data_source_strategy in ["collins_only", "collins_first"]:
+        if collins_api_key:
+            return collins_api_key
+
+        if allow_interactive_prompt:
             collins_api_key = input("请输入Collins API密钥: ").strip()
-            if not collins_api_key:
-                logger.error("API密钥不能为空")
-                return 1
-    else:
-        # 对于llm_only和llm_first策略，Collins API密钥是可选的
-        logger.info("当前策略不需要Collins API密钥")
+            if collins_api_key:
+                return collins_api_key
+            raise ValueError("API密钥不能为空")
+
+        raise ValueError("当前数据源策略需要 COLLINS_API_KEY；非交互模式不会提示输入。")
+
+    logger.info("当前策略不需要Collins API密钥")
+    return collins_api_key
+
+
+def _collect_requested_entries(args: argparse.Namespace) -> List[VocabularyInput]:
+    """Collect inline or piped inputs for agent-friendly direct runs."""
+    stdin_text = ""
+    if args.stdin:
+        stdin_text = sys.stdin.read()
+
+    if not args.entry and not stdin_text:
+        return []
+
+    return parse_inline_entries(args.entry, stdin_text=stdin_text)
+
+
+def main(argv: Optional[Sequence[str]] = None):
+    """主函数"""
+    parser = build_cli_parser()
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    direct_entries = _collect_requested_entries(args)
+    is_direct_mode = bool(args.entry or args.stdin)
+    active_data_source_strategy = "llm_only" if is_direct_mode else DATA_SOURCE_STRATEGY
+
+    logger.info("启动Anki词汇自动化程序")
+    logger.info("数据源策略: %s", active_data_source_strategy)
+    logger.info("LLM Prompt版本: %s", LLM_PROMPT_VERSION)
+
+    try:
+        collins_api_key = _resolve_collins_api_key(
+            active_data_source_strategy=active_data_source_strategy,
+            allow_interactive_prompt=not is_direct_mode,
+        )
+    except ValueError as exc:
+        logger.error(str(exc))
+        return 1
 
     # 读取单词列表
-    word_list = read_word_list()
+    word_list = direct_entries if is_direct_mode else read_word_list()
     if not word_list:
-        logger.error("无法读取单词列表或列表为空")
+        if is_direct_mode:
+            logger.error("没有可处理的直接输入，请传入 --entry 或通过 --stdin 提供内容")
+        else:
+            logger.error("无法读取单词列表或列表为空")
         return 1
 
     # 创建自动化实例
-    automation = VocabularyAutomation(collins_api_key)
+    automation = VocabularyAutomation(
+        collins_api_key,
+        data_source_strategy=active_data_source_strategy,
+    )
 
     # 处理单词列表
-    automation.process_word_list(word_list)
+    if args.concurrent:
+        max_workers = max(1, min(args.max_workers, 8))
+        rate_limit = max(0.1, min(args.rate_limit, 10.0))
+        processing_succeeded = automation.process_word_list_concurrent(
+            word_list,
+            max_workers=max_workers,
+            rate_limit=rate_limit,
+        )
+    else:
+        processing_succeeded = automation.process_word_list(word_list)
+
+    if not processing_succeeded:
+        logger.error("程序未能完成导入流程")
+        return 1
 
     logger.info("程序执行完成")
     return 0

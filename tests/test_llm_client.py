@@ -351,7 +351,7 @@ def test_zero_max_output_tokens_disables_request_limit() -> None:
     assert client.max_output_tokens is None
 
 
-def test_llm_client_defaults_prompt_version_to_baseline() -> None:
+def test_llm_client_defaults_prompt_version_to_revised() -> None:
     client = LLMClient(
         provider="openai",
         api_mode="auto",
@@ -362,6 +362,7 @@ def test_llm_client_defaults_prompt_version_to_baseline() -> None:
     )
 
     assert client.prompt_version == DEFAULT_PROMPT_VERSION
+    assert client.prompt_version == "revised"
 
 
 def test_revised_prompt_adds_lemma_and_part_of_speech_guardrails() -> None:
@@ -385,6 +386,7 @@ def test_revised_prompt_adds_lemma_and_part_of_speech_guardrails() -> None:
     assert 'keep it adjective; do not answer with the verb "define"' in prompt
     assert "same part of speech" in prompt
     assert "same sense as the learner sentence" in prompt
+    assert "primary sense-selection evidence" in prompt
 
 
 def test_list_models_for_backend_uses_matching_sdk(monkeypatch) -> None:

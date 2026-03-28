@@ -5,11 +5,12 @@ Input validation module for security and data integrity
 
 import re
 import logging
-from typing import Optional
+from typing import Iterable, List, Optional
 
 from .models import VocabularyInput
 
 logger = logging.getLogger(__name__)
+ENTRY_SEPARATORS = ("\t", "｜", "|")
 
 
 class InputValidator:
@@ -246,6 +247,17 @@ def sanitize_example_input(example: str) -> str:
     return InputValidator.sanitize_example(example)
 
 
+def split_vocabulary_input(line: str) -> tuple[str, str]:
+    """Split one raw input line into a word part and an optional example part."""
+    raw_line = line.strip()
+
+    for separator in ENTRY_SEPARATORS:
+        if separator in raw_line:
+            return raw_line.split(separator, 1)
+
+    return raw_line, ""
+
+
 def parse_vocabulary_input(line: str) -> tuple[Optional[VocabularyInput], Optional[str]]:
     """Parse one input line into a structured vocabulary request."""
     if not line or not isinstance(line, str):
@@ -255,12 +267,7 @@ def parse_vocabulary_input(line: str) -> tuple[Optional[VocabularyInput], Option
     if not raw_line:
         return None, "输入为空"
 
-    if "\t" in raw_line:
-        word_part, example_part = raw_line.split("\t", 1)
-    elif " | " in raw_line:
-        word_part, example_part = raw_line.split(" | ", 1)
-    else:
-        word_part, example_part = raw_line, ""
+    word_part, example_part = split_vocabulary_input(raw_line)
 
     word = sanitize_word_input(word_part)
     is_valid, error = validate_word_input(word)
@@ -275,3 +282,19 @@ def parse_vocabulary_input(line: str) -> tuple[Optional[VocabularyInput], Option
         ),
         None,
     )
+
+
+def parse_vocabulary_lines(lines: Iterable[str]) -> tuple[List[VocabularyInput], List[str]]:
+    """Parse multiple raw lines into vocabulary requests and collect invalid inputs."""
+    entries: List[VocabularyInput] = []
+    errors: List[str] = []
+
+    for raw_line in lines:
+        parsed, error = parse_vocabulary_input(raw_line)
+        if parsed is None:
+            if isinstance(raw_line, str) and raw_line.strip():
+                errors.append("{0} ({1})".format(raw_line.strip(), error))
+            continue
+        entries.append(parsed)
+
+    return entries, errors

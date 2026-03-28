@@ -40,11 +40,12 @@ SUPPORTED_LLM_PROVIDERS = (
 SUPPORTED_LLM_API_MODES = ("auto", "responses", "chat", "messages")
 SUPPORTED_GPT_OSS_REASONING_EFFORTS = ("minimal", "low", "medium", "high")
 SUPPORTED_PROMPT_VERSIONS = ("baseline", "revised")
-DEFAULT_PROMPT_VERSION = "baseline"
+DEFAULT_PROMPT_VERSION = "revised"
 
 SYSTEM_PROMPT = (
-    "You are a comprehensive English dictionary. Always respond with valid JSON "
-    "containing accurate vocabulary information. Be precise and educational."
+    "You are preparing one reliable beginner-friendly English vocabulary card. "
+    "Use the learner sentence to choose the correct sense and part of speech. "
+    "Always respond with valid JSON containing accurate, concise vocabulary information."
 )
 REASONING_ITEM_TYPES = {"reasoning", "reasoning_text", "thinking", "thinking_text"}
 TEXT_ITEM_TYPES = {"text", "output_text"}
@@ -752,7 +753,9 @@ class LLMClient:
 Context sentence from the learner:
 "{source_example}"
 
-Use this sentence only to choose the correct sense.
+Use this sentence as the primary evidence for choosing the correct sense and part of speech.
+- If the sentence clearly uses a less-common sense, choose that sense instead of the most common dictionary meaning.
+- If the sentence already fixes the part of speech, keep that part of speech in the answer.
 - Do not copy it into the generated example.
 - The generated example should be a new sentence different from the learner sentence.
 - The generated example MUST still include the target word "{word}".
@@ -844,19 +847,23 @@ Critical requirement:
             "Decision rules:\n"
             "- First identify how the target word functions in the learner sentence:\n"
             "  noun, verb, adjective, adverb, etc.\n"
+            "- Treat the learner sentence as the primary sense-selection evidence.\n"
+            "  Only fall back to the most common dictionary sense when the sentence itself is too ambiguous.\n"
             "- Choose the sense that best matches the learner sentence,\n"
             "  even if another sense is more common overall.\n"
             "- Return the dictionary headword for that exact sense and part of speech.\n"
-            '- Lemmatize only when the learner sentence clearly uses an inflected verb form\n'
+            "- Lemmatize only when the learner sentence clearly uses an inflected verb form\n"
             '  (for example, "running" -> "run").\n'
-            '- Keep the surface form unchanged when it is the correct adjective,\n'
-            '  adverb, or noun headword for that sense '
+            "- Keep the surface form unchanged when it is the correct adjective,\n"
+            "  adverb, or noun headword for that sense "
             '(for example, "defining capability" -> word "defining", part_of_speech "adjective").\n'
-            '- Do not switch an adjective or noun use back into a related verb\n'
+            "- Do not switch an adjective or noun use back into a related verb\n"
             "  just because the spelling looks similar.\n"
             "- The definition must describe the same sense used in the learner sentence.\n"
             '- Do not fall back to the "state the meaning" sense unless the learner sentence\n'
             "  is actually about explaining a word or phrase.\n"
+            "- Keep collocational or contextual meaning aligned with the learner sentence.\n"
+            "  Do not drift into a nearby but different dictionary sense.\n"
             "- Use short, common words suitable for beginner or lower-intermediate learners.\n"
             "- Avoid using the target word, close variants, or dictionary jargon in the definition.\n"
             "- Keep the definition concise, usually 6-14 words.\n"
