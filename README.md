@@ -5,7 +5,7 @@
 
 > Language: [English](README.md) | [中文](README_CN.md)
 
-Turn your own words and sentences into beginner-friendly English vocabulary cards and import them into Anki automatically.
+Automatically turn your own words and source sentences into beginner-friendly English vocabulary cards and import them into Anki for study. You can also use an agent with the **study-coach** skill for interactive learning.
 
 ## Features
 
