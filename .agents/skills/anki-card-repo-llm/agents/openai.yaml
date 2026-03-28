@@ -1,0 +1,7 @@
+interface:
+  display_name: "Anki Card Repo LLM"
+  short_description: "Run the repo CLI and local-LLM path"
+  default_prompt: "Use $anki-card-repo-llm to create or validate cards through the anki-card CLI and local model workflow."
+
+policy:
+  allow_implicit_invocation: true

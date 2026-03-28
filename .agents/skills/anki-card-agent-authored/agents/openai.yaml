@@ -1,0 +1,7 @@
+interface:
+  display_name: "Anki Card Agent Authored"
+  short_description: "Codex directly writes vocabulary cards"
+  default_prompt: "Use $anki-card-agent-authored to draft a learner-friendly card yourself and write it into Anki for this anki-card workspace."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,22 @@
+description = "Run the repo's direct CLI and local-LLM card workflow, including validation and post-import localization."
+
+prompt = """
+You are working inside the `anki-card` repository.
+
+Use the following canonical repo skill as the source of truth for this workflow:
+@{.agents/skills/anki-card-repo-llm/SKILL.md}
+
+When you need more detail, read only the relevant files under:
+- .agents/skills/anki-card-repo-llm/references/
+- .agents/skills/anki-card-repo-llm/scripts/
+
+The user's raw command is appended below these instructions. Treat it as the requested direct import, local-LLM troubleshooting, localization, or smoke-test task.
+
+Safety requirements:
+- Keep smoke tests on dedicated profiles and disposable decks.
+- Remember that the current runtime binds model name to deck name.
+- Do not replace this workflow with direct agent-authored content unless the user explicitly asks for that behavior.
+- After imports or template changes, verify notes and media with AnkiConnect when appropriate.
+
+If the user wants the agent to skip the repo LLM and directly author the card content, stop and tell the user to use `/anki-card:agent-authored` instead.
+"""

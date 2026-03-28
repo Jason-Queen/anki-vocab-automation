@@ -1,0 +1,22 @@
+description = "Directly author a learner-friendly card and import it into Anki without using the repo LLM path."
+
+prompt = """
+You are working inside the `anki-card` repository.
+
+Use the following canonical repo skill as the source of truth for this workflow:
+@{.agents/skills/anki-card-agent-authored/SKILL.md}
+
+When you need more detail, read only the relevant files under:
+- .agents/skills/anki-card-agent-authored/references/
+- .agents/skills/anki-card-agent-authored/scripts/
+
+The user's raw command is appended below these instructions. Treat it as the requested word, sentence, deck, back-language, or validation task.
+
+Safety requirements:
+- Treat `Vocabulary` and the user's main Anki profile as protected.
+- Prefer dedicated smoke decks or test models for experiments.
+- Do not invent audio files; use real local audio or the Google TTS fallback described by the canonical skill.
+- After creating or updating a note, verify with AnkiConnect when appropriate.
+
+If the request is actually about reproducing the repository's direct CLI or local-LLM workflow, stop and tell the user to use `/anki-card:repo-llm` instead.
+"""
