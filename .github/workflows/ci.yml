@@ -9,15 +9,9 @@ on:
 permissions:
   contents: read
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
 jobs:
   test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
     strategy:
       matrix:
         python-version: [3.9, "3.10", "3.11", "3.12"]
@@ -46,15 +40,6 @@ jobs:
     - name: Test with pytest
       run: |
         uv run pytest tests/ -v --cov=src/anki_vocab_automation --cov-report=xml
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v5
-      with:
-        files: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
-        use_oidc: true
 
   security:
     runs-on: ubuntu-latest
