@@ -6,9 +6,15 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       matrix:
         python-version: [3.9, "3.10", "3.11", "3.12"]
@@ -39,12 +45,13 @@ jobs:
         uv run pytest tests/ -v --cov=src/anki_vocab_automation --cov-report=xml
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
-        file: ./coverage.xml
+        files: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
+        use_oidc: true
 
   security:
     runs-on: ubuntu-latest
@@ -59,6 +66,8 @@ jobs:
 
     - name: Set up uv
       uses: astral-sh/setup-uv@v7
+      with:
+        save-cache: "false"
 
     - name: Install project dependencies
       run: uv sync --locked
@@ -70,7 +79,7 @@ jobs:
       run: uv run --with bandit bandit -r src/ -f json -o bandit-report.json || true
 
     - name: Upload security reports
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: security-reports
         path: |
