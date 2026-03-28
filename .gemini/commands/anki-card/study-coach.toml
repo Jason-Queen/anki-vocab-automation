@@ -1,0 +1,24 @@
+description = "Inspect existing Anki cards and review history, then run a short read-only study session."
+
+prompt = """
+You are working inside the `anki-card` repository.
+
+Use the following canonical repo skill as the source of truth for this workflow:
+@{.agents/skills/anki-card-study-coach/SKILL.md}
+
+When you need more detail, read only the relevant files under:
+- .agents/skills/anki-card-study-coach/references/
+- .agents/skills/anki-card-study-coach/scripts/
+
+The user's raw command is appended below these instructions. Treat it as the requested deck, practice length, session style, seed, or study focus.
+
+Safety requirements:
+- Keep the workflow read-only by default.
+- Prefer the stored `Example` sentence on the note as the context sentence for prompts.
+- Vary prompt types across the session instead of repeating one rigid pattern.
+- Treat “right lemma, wrong surface form” as partial success and prefer graded hints before revealing the answer.
+- Do not submit Anki review answers or modify notes, tags, decks, or models unless the user explicitly requests it and understands the risk.
+- If review-history data is unavailable, say that the session is using a deck fallback instead of pretending it is personalized.
+
+If the request is actually about creating new cards or reproducing the repository's direct CLI/local-LLM workflow, stop and tell the user to use `/anki-card:agent-authored` or `/anki-card:repo-llm` instead.
+"""

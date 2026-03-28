@@ -61,18 +61,24 @@ Alternatively, use the interactive launcher (`uv run python app.py`) to create a
 
 ### Agent tool mode (recommended)
 
-If you use Codex, Claude Code, Gemini CLI, or a similar agent tool, this is the easiest way to get started. Choose the **agent-authored** entrypoint and the agent handles everything — LLM calls, audio generation, and Anki import — with no local LLM, no API key, and no `config.env` editing required.
+If you use Codex, Claude Code, Gemini CLI, or a similar agent tool, this is the easiest way to get started. Choose the entrypoint that matches the job: create new cards with **agent-authored**, use the repository's own local-LLM pipeline with **repo-llm**, or practice your existing words with **study-coach**.
 
 Open the repository root in your agent tool, then invoke one of these entrypoints:
 
 | Tool | Entrypoints |
 | --- | --- |
-| Codex / OpenCode | `anki-card-repo-llm` or `anki-card-agent-authored` |
-| Claude Code | `/anki-card-repo-llm` or `/anki-card-agent-authored` |
-| Gemini CLI | `/anki-card:repo-llm` or `/anki-card:agent-authored` |
+| Codex / OpenCode | `anki-card-repo-llm` or `anki-card-agent-authored` or `anki-card-study-coach` |
+| Claude Code | `/anki-card-repo-llm` or `/anki-card-agent-authored` or `/anki-card-study-coach` |
+| Gemini CLI | `/anki-card:repo-llm` or `/anki-card:agent-authored` or `/anki-card:study-coach` |
 
 - **agent-authored** — the agent writes card content directly using its own model. No local LLM or API key required.
 - **repo-llm** — the agent follows the repository's own LLM workflow. Requires a configured LLM provider (see [Configuration](#configuration)).
+- **study-coach** — the agent inspects your existing Anki cards and review history, then runs a short read-only study session with varied prompt types, your stored example sentence as the default context, and graded hints for near-miss answers. Requires a live Anki desktop session with AnkiConnect and an existing deck to practice from.
+
+Example study-coach requests:
+
+- `Practice my 5 weakest words in Vocabulary.`
+- `Use study-coach on Vocabulary and give hints before revealing answers.`
 
 If the skill files were added after your agent session started, restart the session so it rescans the project.
 

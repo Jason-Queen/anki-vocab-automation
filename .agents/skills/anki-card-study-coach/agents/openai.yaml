@@ -1,0 +1,7 @@
+interface:
+  display_name: "Anki Card Study Coach"
+  short_description: "Practice existing Anki words with review-aware prompts"
+  default_prompt: "Use $anki-card-study-coach to inspect my existing Anki deck, pick the highest-priority words to review, and run a short read-only study session for this anki-card workspace."
+
+policy:
+  allow_implicit_invocation: true

@@ -61,18 +61,24 @@ DECK_NAME=Vocabulary
 
 ### Agent 工具模式（推荐）
 
-如果你在使用 Codex、Claude Code、Gemini CLI 或类似的 agent 工具，这是最简单的入口。选择 **agent-authored** 入口，agent 会替你完成一切——LLM 调用、音频生成和 Anki 导入——不需要本地 LLM、不需要 API 密钥、也不需要手动编辑 `config.env`。
+如果你在使用 Codex、Claude Code、Gemini CLI 或类似的 agent 工具，这是最简单的入口。根据任务选择入口：用 **agent-authored** 新建卡片，用 **repo-llm** 复现仓库自己的本地 LLM 流程，用 **study-coach** 针对已有卡片做互动练习。
 
 在 agent 工具中打开仓库根目录，然后调用以下入口：
 
 | 工具 | 入口 |
 | --- | --- |
-| Codex / OpenCode | `anki-card-repo-llm` 或 `anki-card-agent-authored` |
-| Claude Code | `/anki-card-repo-llm` 或 `/anki-card-agent-authored` |
-| Gemini CLI | `/anki-card:repo-llm` 或 `/anki-card:agent-authored` |
+| Codex / OpenCode | `anki-card-repo-llm`、`anki-card-agent-authored` 或 `anki-card-study-coach` |
+| Claude Code | `/anki-card-repo-llm`、`/anki-card-agent-authored` 或 `/anki-card-study-coach` |
+| Gemini CLI | `/anki-card:repo-llm`、`/anki-card:agent-authored` 或 `/anki-card:study-coach` |
 
 - **agent-authored** — agent 用自身模型直接编写卡片内容。不需要本地 LLM 或 API 密钥。
 - **repo-llm** — agent 调用仓库自带的 LLM 流程生成卡片内容。需要先配置 LLM 后端（见[配置](#配置)）。
+- **study-coach** — agent 读取你现有的 Anki 卡片和复习记录，进行只读的互动学习；题型会变化，默认优先使用卡片里已有的例句作为语境，并在答案接近时先给分级提示而不是直接揭晓。需要正在运行的 Anki Desktop、已启用的 AnkiConnect，以及一个已有卡片的 deck。
+
+`study-coach` 示例请求：
+
+- `Practice my 5 weakest words in Vocabulary.`
+- `Use study-coach on Vocabulary and give hints before revealing answers.`
 
 如果这些 skill 文件是在 agent 会话启动后才加入的，需要重启会话让工具重新扫描项目。
 
