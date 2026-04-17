@@ -16,7 +16,7 @@ description: "Use when Codex should create or validate Anki cards through the an
 
 1. 先读 `references/project-agent-workflow.md`。
 2. 做 preflight：
-   - `python3 scripts/ankiconnect_request.py --action version --pretty`
+   - `python3 .agents/skills/anki-card-repo-llm/scripts/ankiconnect_request.py --action version --pretty`
    - 如果用户在排查模型链路，再检查本地 provider/LM Studio 是否可达
 3. 单条导入优先：
    - `uv run anki-vocab --entry 'word｜sentence'`
@@ -45,5 +45,5 @@ description: "Use when Codex should create or validate Anki cards through the an
 - `references/localized-back-language.md`: 标准卡导入后的解释语言本地化流程。
 - `references/project-anki-model.md`: 字段顺序、模板更新和重复检测约束。
 - `references/ankiconnect-capabilities.md`: 原生 AnkiConnect 查询与动作。
-- `scripts/ankiconnect_request.py`: 通用 AnkiConnect 请求脚本。
-- `scripts/localize_back_template.py`: 模型级背面标签本地化脚本。
+- `.agents/skills/anki-card-repo-llm/scripts/ankiconnect_request.py`: 通用 AnkiConnect 请求脚本。
+- `.agents/skills/anki-card-repo-llm/scripts/localize_back_template.py`: 模型级背面标签本地化脚本。

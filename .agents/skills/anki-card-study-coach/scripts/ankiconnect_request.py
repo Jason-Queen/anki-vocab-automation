@@ -49,11 +49,11 @@ def main() -> int:
         description="Send one AnkiConnect request and print the JSON response.",
         epilog=(
             "Examples:\n"
-            "  python3 scripts/ankiconnect_request.py --action version --pretty\n"
-            "  python3 scripts/ankiconnect_request.py --action findCards "
+            "  python3 .agents/skills/anki-card-study-coach/scripts/ankiconnect_request.py --action version --pretty\n"
+            "  python3 .agents/skills/anki-card-study-coach/scripts/ankiconnect_request.py --action findCards "
             "--params-json '{\"query\":\"deck:\\\"Vocabulary\\\"\"}' --pretty\n"
             "  printf '{\"scopes\":[\"actions\"],\"actions\":null}' | "
-            "python3 scripts/ankiconnect_request.py --action apiReflect --params-stdin --pretty"
+            "python3 .agents/skills/anki-card-study-coach/scripts/ankiconnect_request.py --action apiReflect --params-stdin --pretty"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

@@ -58,7 +58,7 @@
 5. 用 `updateNoteFields` 写回翻译后的字段。
 6. 如果要把背面标签也改掉：
    - 先用 `modelTemplates` 读取当前模板；
-   - 再用 `scripts/localize_back_template.py` 按标签映射更新该模型的 `Card 1` 背面模板；
+   - 再用 `.agents/skills/anki-card-repo-llm/scripts/localize_back_template.py` 按标签映射更新该模型的 `Card 1` 背面模板；
    - 或用 `updateModelTemplates` 手动更新。
 7. 最后验证：
    - `notesInfo`
@@ -141,7 +141,7 @@
 然后执行：
 
 ```bash
-python3 scripts/localize_back_template.py \
+python3 .agents/skills/anki-card-repo-llm/scripts/localize_back_template.py \
   --model-name Vocabulary_LocalSmoke_ChineseBack \
   --label-file labels-zh-cn.json \
   --pretty

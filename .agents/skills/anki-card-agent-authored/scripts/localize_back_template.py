@@ -7,7 +7,7 @@ import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Tuple
 
 
 DEFAULT_LABEL_KEYS = (
@@ -18,6 +18,9 @@ DEFAULT_LABEL_KEYS = (
     "American:",
     "Source:",
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+CANONICAL_BACK_TEMPLATE_PATH = REPO_ROOT / "src" / "anki_vocab_automation" / "templates" / "vocabulary_back.html"
 
 
 def _load_mapping(args: argparse.Namespace) -> Dict[str, str]:
@@ -58,6 +61,36 @@ def _invoke(url: str, action: str, params: Dict[str, object]) -> Dict[str, objec
     return parsed
 
 
+def _load_canonical_back_template() -> str:
+    if not CANONICAL_BACK_TEMPLATE_PATH.is_file():
+        raise FileNotFoundError("Canonical back template not found: {0}".format(CANONICAL_BACK_TEMPLATE_PATH))
+    return CANONICAL_BACK_TEMPLATE_PATH.read_text(encoding="utf-8").strip()
+
+
+def _localize_canonical_back_template(mapping: Dict[str, str]) -> Tuple[str, List[str]]:
+    back = _load_canonical_back_template()
+    missing_keys = [key for key in mapping if key not in back]
+    if missing_keys:
+        raise ValueError(
+            "Label keys not found in canonical back template: {0}".format(", ".join(sorted(missing_keys)))
+        )
+
+    updated_keys: List[str] = []
+    localized_back = back
+    for key, value in mapping.items():
+        updated_back = localized_back.replace(key, value)
+        if updated_back != localized_back:
+            updated_keys.append(key)
+        localized_back = updated_back
+
+    if not updated_keys:
+        raise ValueError("Label mapping did not modify the canonical back template.")
+
+    ordered_keys = [key for key in DEFAULT_LABEL_KEYS if key in updated_keys]
+    ordered_keys.extend(key for key in updated_keys if key not in DEFAULT_LABEL_KEYS)
+    return localized_back, ordered_keys
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Localize a model's Card 1 back template labels with a JSON mapping.",
@@ -81,10 +114,7 @@ def main() -> int:
             raise RuntimeError("Template '{0}' not found in model '{1}'.".format(args.card_name, args.model_name))
 
         target = templates[args.card_name]
-        back = target["Back"]
-        for key in DEFAULT_LABEL_KEYS:
-            if key in mapping:
-                back = back.replace(key, mapping[key])
+        back, updated_keys = _localize_canonical_back_template(mapping)
 
         updated_templates = dict(templates)
         updated_templates[args.card_name] = {
@@ -103,7 +133,7 @@ def main() -> int:
     output = {
         "modelName": args.model_name,
         "cardName": args.card_name,
-        "updatedKeys": [key for key in DEFAULT_LABEL_KEYS if key in mapping],
+        "updatedKeys": updated_keys,
         "result": update_response.get("result"),
     }
     if args.pretty:

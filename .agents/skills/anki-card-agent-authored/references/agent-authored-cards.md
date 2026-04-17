@@ -114,7 +114,7 @@ Agent 至少需要产出这些字段：
 2. 起草卡片内容。
 3. 如果用户要求指定背面语言，直接用该语种起草解释性字段。
 4. 组装成 JSON payload。
-5. 用 `scripts/create_agent_vocab_note.py` 导入。
+5. 用 `.agents/skills/anki-card-agent-authored/scripts/create_agent_vocab_note.py` 导入。
 6. 最后用 `findNotes`、`notesInfo`、`retrieveMediaFile` 回查。
 
 ## Example Minimal Payload

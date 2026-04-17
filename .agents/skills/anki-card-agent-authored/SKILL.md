@@ -15,7 +15,7 @@ description: "Use when Codex should directly author beginner-friendly English vo
 ## Workflow
 
 1. 先做轻量 preflight：
-   - `python3 scripts/ankiconnect_request.py --action version --pretty`
+   - `python3 .agents/skills/anki-card-agent-authored/scripts/ankiconnect_request.py --action version --pretty`
    - 必要时再看 `deckNames`、`modelFieldNames`、`getActiveProfile`
 2. 如果需要字段约束、模板或重复检测规则，读 `references/project-anki-model.md`。
 3. 在真正起草卡片前，读 `references/agent-authored-cards.md`。
@@ -27,10 +27,10 @@ description: "Use when Codex should directly author beginner-friendly English vo
    - `example`
    - `generated_example`
    - `pronunciation`
-5. 用 `python3 scripts/create_agent_vocab_note.py --repo-root <repo-root> --deck-name <deck> --note-json '<json>' --pretty` 导入。
+5. 用 `python3 .agents/skills/anki-card-agent-authored/scripts/create_agent_vocab_note.py --repo-root <repo-root> --deck-name <deck> --note-json '<json>' --pretty` 导入。
 6. 如果用户要求背面解释语言，读 `references/localized-back-language.md`：
    - 单卡语言切换：更新 note 字段
-   - 模型级标签切换：再用 `python3 scripts/localize_back_template.py ...`
+   - 模型级标签切换：再用 `python3 .agents/skills/anki-card-agent-authored/scripts/localize_back_template.py ...`
 7. 最后用 `findNotes`、`notesInfo`、`retrieveMediaFile` 回查结果。
 
 ## Default Rules
@@ -53,6 +53,6 @@ description: "Use when Codex should directly author beginner-friendly English vo
 - `references/localized-back-language.md`: 背面解释语言切换流程和标签映射。
 - `references/project-anki-model.md`: 模型字段、模板和重复检测约束。
 - `references/ankiconnect-capabilities.md`: 原生 AnkiConnect action 和查询例子。
-- `scripts/ankiconnect_request.py`: 通用 AnkiConnect 请求脚本。
-- `scripts/create_agent_vocab_note.py`: 导入 agent 已经写好的 note payload。
-- `scripts/localize_back_template.py`: 更新模型背面标签。
+- `.agents/skills/anki-card-agent-authored/scripts/ankiconnect_request.py`: 通用 AnkiConnect 请求脚本。
+- `.agents/skills/anki-card-agent-authored/scripts/create_agent_vocab_note.py`: 导入 agent 已经写好的 note payload。
+- `.agents/skills/anki-card-agent-authored/scripts/localize_back_template.py`: 更新模型背面标签。

@@ -94,7 +94,7 @@ implementation
 可选快速检查：
 
 ```bash
-python3 scripts/ankiconnect_request.py --action version --pretty
+python3 .agents/skills/anki-card-repo-llm/scripts/ankiconnect_request.py --action version --pretty
 ```
 
 ## Local Smoke Test

@@ -41,8 +41,8 @@
 常用命令：
 
 ```bash
-python3 scripts/ankiconnect_request.py --action version --pretty
-python3 scripts/ankiconnect_request.py --action apiReflect --params-json '{"scopes":["actions"],"actions":null}' --pretty
+python3 .agents/skills/anki-card-agent-authored/scripts/ankiconnect_request.py --action version --pretty
+python3 .agents/skills/anki-card-agent-authored/scripts/ankiconnect_request.py --action apiReflect --params-json '{"scopes":["actions"],"actions":null}' --pretty
 ```
 
 ### Deck and Model Prep

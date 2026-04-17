@@ -10,7 +10,7 @@ from urllib.parse import quote
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 
 REQUIRED_MODEL_FIELDS: List[str] = [
@@ -29,6 +29,98 @@ REQUIRED_MODEL_FIELDS: List[str] = [
     "BritishAudioSource",
     "AmericanAudioSource",
 ]
+
+
+def _normalize_content_type(content_type: str) -> str:
+    return content_type.partition(";")[0].strip().lower()
+
+
+def _is_obviously_non_audio_content_type(content_type: str) -> bool:
+    normalized = _normalize_content_type(content_type)
+    if not normalized:
+        return False
+    if normalized.startswith("text/"):
+        return True
+    if normalized in {
+        "application/json",
+        "application/xml",
+        "application/xhtml+xml",
+        "application/javascript",
+        "image/svg+xml",
+    }:
+        return True
+    return normalized.endswith("+json") or normalized.endswith("+xml")
+
+
+def _has_audio_signature(data: bytes) -> bool:
+    if data.startswith(b"ID3"):
+        return True
+    if len(data) >= 2 and data[0] == 0xFF and (data[1] & 0xE0) == 0xE0:
+        return True
+    if len(data) >= 12 and data.startswith(b"RIFF") and data[8:12] == b"WAVE":
+        return True
+    if data.startswith(b"OggS") or data.startswith(b"fLaC"):
+        return True
+    return len(data) >= 12 and data[4:8] == b"ftyp"
+
+
+def _looks_like_text_error_payload(data: bytes) -> bool:
+    sample = data[:512].lstrip()
+    if not sample:
+        return True
+
+    lowered = sample.lower()
+    if lowered.startswith(
+        (
+            b"<!doctype html",
+            b"<html",
+            b"<?xml",
+            b"{",
+            b"[",
+            b"error",
+            b"too many requests",
+            b"access denied",
+        )
+    ):
+        return True
+
+    decoded = sample.decode("utf-8", errors="ignore").strip().lower()
+    if not decoded:
+        return False
+
+    if decoded.startswith(
+        (
+            "<!doctype html",
+            "<html",
+            "<?xml",
+            "{",
+            "[",
+            "error",
+            "too many requests",
+            "access denied",
+        )
+    ):
+        return True
+
+    printable_chars = sum(1 for char in decoded if char.isprintable() or char.isspace())
+    return printable_chars > 0 and (printable_chars / len(decoded)) > 0.95 and len(decoded.split()) >= 3
+
+
+def _validate_audio_bytes(data: bytes, content_type: str = "", source: str = "audio payload") -> None:
+    if not data:
+        raise ValueError("{0} was empty.".format(source))
+
+    normalized_type = _normalize_content_type(content_type)
+    if normalized_type and _is_obviously_non_audio_content_type(normalized_type):
+        raise ValueError("{0} returned non-audio content-type: {1}".format(source, normalized_type))
+
+    if _has_audio_signature(data):
+        return
+
+    if _looks_like_text_error_payload(data):
+        raise ValueError("{0} looked like text/html/json instead of audio.".format(source))
+
+    raise ValueError("{0} did not match a supported audio signature.".format(source))
 
 
 def _load_payload(args: argparse.Namespace) -> Dict[str, Any]:
@@ -141,7 +233,12 @@ def _store_local_audio(url: str, word: str, payload: Dict[str, Any], slot: str) 
     safe_word = "".join(char for char in word if char.isalnum() or char in "._-")[:20] or "audio"
     extension = file_path.suffix or ".mp3"
     filename = "vocab_{0}_{1}_{2}{3}".format(safe_word, slot, source_hash, extension)
-    encoded = base64.b64encode(file_path.read_bytes()).decode("utf-8")
+    audio_bytes = file_path.read_bytes()
+    _validate_audio_bytes(
+        audio_bytes,
+        source="Local audio file for {0} ({1})".format(slot, file_path),
+    )
+    encoded = base64.b64encode(audio_bytes).decode("utf-8")
     _invoke(url, "storeMediaFile", {"filename": filename, "data": encoded})
     payload[source_key] = str(payload.get(source_key, "")).strip() or "Local Audio"
     return filename
@@ -160,7 +257,7 @@ def _google_tts_url(word: str, language: str) -> str:
     )
 
 
-def _download_bytes(url: str) -> bytes:
+def _download_bytes(url: str) -> Tuple[bytes, str]:
     request = urllib.request.Request(
         url,
         headers={"User-Agent": "Anki-Vocabulary-Automation/2.0 (Agent Authored Audio)"},
@@ -168,9 +265,12 @@ def _download_bytes(url: str) -> bytes:
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         data = response.read()
-    if not data:
-        raise RuntimeError("Downloaded audio was empty: {0}".format(url))
-    return data
+        headers = getattr(response, "headers", {})
+        if hasattr(headers, "get_content_type"):
+            content_type = headers.get_content_type()
+        else:
+            content_type = str(headers.get("Content-Type", ""))
+    return data, content_type
 
 
 def _store_google_tts_audio(url: str, word: str, payload: Dict[str, Any], slot: str, language: str) -> str:
@@ -179,7 +279,13 @@ def _store_google_tts_audio(url: str, word: str, payload: Dict[str, Any], slot: 
     source_hash = hashlib.md5(audio_url.encode("utf-8")).hexdigest()[:8]
     safe_word = "".join(char for char in word if char.isalnum() or char in "._-")[:20] or "audio"
     filename = "vocab_{0}_{1}_{2}.mp3".format(safe_word, slot, source_hash)
-    encoded = base64.b64encode(_download_bytes(audio_url)).decode("utf-8")
+    audio_bytes, content_type = _download_bytes(audio_url)
+    _validate_audio_bytes(
+        audio_bytes,
+        content_type=content_type,
+        source="Google TTS response for {0} ({1})".format(slot, audio_url),
+    )
+    encoded = base64.b64encode(audio_bytes).decode("utf-8")
     _invoke(url, "storeMediaFile", {"filename": filename, "data": encoded})
     payload[source_key] = "Google TTS"
     return filename

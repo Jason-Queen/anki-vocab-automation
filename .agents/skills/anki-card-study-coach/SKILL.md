@@ -15,16 +15,16 @@ description: "Use when Codex should inspect existing Anki vocabulary cards and r
 ## Workflow
 
 1. 先做轻量 preflight：
-   - `python3 scripts/ankiconnect_request.py --action version --pretty`
+   - `python3 .agents/skills/anki-card-study-coach/scripts/ankiconnect_request.py --action version --pretty`
    - 必要时再看 `getActiveProfile`、`deckNames`
 2. 如果要确认原生 action、查询写法或 context 例句来源，读 `references/ankiconnect-study-queries.md`。
 3. 如果要确认互动引导方式，读 `references/efl-coaching-guidelines.md`。
-4. 用 `python3 scripts/select_study_cards.py --deck <deck> --limit <n> --seed <seed> --pretty` 生成候选练习词和本轮题型计划。
+4. 用 `python3 .agents/skills/anki-card-study-coach/scripts/select_study_cards.py --deck <deck> --limit <n> --seed <seed> --pretty` 生成候选练习词和本轮题型计划。
    - 没有指定 `--seed` 时，脚本会自动生成一个 session seed，并在输出里回显。
 5. 如果筛选结果需要排查，再用 `findCards`、`cardsInfo`、`getReviewsOfCards` 做只读核对。
 6. 进行 5 到 10 题的小型互动练习。优先一次只练一个词，跟随脚本规划的随机题型，但保持 beginner-friendly。
 7. 如果用户答不上来、明显接近、或者是 gap-fill 这类词形敏感题，运行：
-   - `python3 scripts/study_turn_assist.py --word <word> --part-of-speech <pos> --context-example '<example>' --question-type <type> --definition '<definition>' --user-answer '<answer>' --hint-level <n> --pretty`
+   - `python3 .agents/skills/anki-card-study-coach/scripts/study_turn_assist.py --word <word> --part-of-speech <pos> --context-example '<example>' --question-type <type> --definition '<definition>' --user-answer '<answer>' --hint-level <n> --pretty`
 8. 结束后输出简短总结：今天练了哪些词、哪些词不稳、下次建议练什么。
 
 ## Default Rules
@@ -51,6 +51,6 @@ description: "Use when Codex should inspect existing Anki vocabulary cards and r
 - `references/study-session-rules.md`: 学习会话节奏、题型和反馈边界。
 - `references/efl-coaching-guidelines.md`: 研究导向的 EFL 引导原则和反馈策略。
 - `references/ankiconnect-study-queries.md`: 只读查询动作、示例命令、降级规则。
-- `scripts/ankiconnect_request.py`: 通用 AnkiConnect 请求脚本。
-- `scripts/select_study_cards.py`: 从现有 deck 和复习日志中筛选优先练习词。
-- `scripts/study_turn_assist.py`: 检查词形近似、生成逐级提示，帮助判断“部分正确”。
+- `.agents/skills/anki-card-study-coach/scripts/ankiconnect_request.py`: 通用 AnkiConnect 请求脚本。
+- `.agents/skills/anki-card-study-coach/scripts/select_study_cards.py`: 从现有 deck 和复习日志中筛选优先练习词。
+- `.agents/skills/anki-card-study-coach/scripts/study_turn_assist.py`: 检查词形近似、生成逐级提示，帮助判断“部分正确”。

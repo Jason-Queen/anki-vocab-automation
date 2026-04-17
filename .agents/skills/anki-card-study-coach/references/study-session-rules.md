@@ -46,7 +46,7 @@
   - 单数 vs 复数
   - 原形 vs 过去式
   - 原形 vs `-ing`
-- 在这类题里，优先使用 `scripts/study_turn_assist.py` 做确定性的 form check。
+- 在这类题里，优先使用 `.agents/skills/anki-card-study-coach/scripts/study_turn_assist.py` 做确定性的 form check。
 
 ## Hint Mode
 
